@@ -3,9 +3,9 @@
 namespace GameBoy.Core;
 
 [Singleton]
-public sealed class Cpu(Bus bus, ILogger<Cpu> logger)
+public sealed partial class Cpu(Bus bus, ILogger<Cpu> logger)
 {
-    private CpuRegisters _registers = new CpuRegisters
+    private CpuRegisters _registers = new()
     {
         PC = 0x100,
     };
@@ -16,6 +16,7 @@ public sealed class Cpu(Bus bus, ILogger<Cpu> logger)
     //private bool _halted = false;
     private ulong _cycles;
     //private bool _stepping;
+    private bool _masterInterruptsEnabled = true;
 
     public ushort Read(RegisterType register) => register switch
     {
@@ -40,10 +41,18 @@ public sealed class Cpu(Bus bus, ILogger<Cpu> logger)
     {
         //if (!_halted)
         {
-            logger.LogInformation("PC: {PC:X4}, SP {SP:X4}", _registers.PC, _registers.SP);
             _instruction = FetchInstruction();
             _data = FetchData();
-            logger.LogInformation("Executing {@Instruction} with Data {@Data}", _instruction, _data);
+            logger.LogInformation("""
+                0x{PC:X4}: {Instruction} (0x{OpCode:X2} 0x{PC1:X2} 0x{PC2:X2})
+                A: 0x{A:X2}, B: 0x{B:X2}, D: 0x{D:X2}, H: 0x{H:X2} 
+                F: 0x{F:X2}, C: 0x{C:X2}, E: 0x{E:X2}, L: 0x{L:X2}
+                Z: {Z:X2}, N: {N:X2}, H: {H:X2}, C: {C:X2}
+                """, _registers.PC, _instruction.Type.ToString().PadRight(4), _instruction.OpCode, bus.Read((ushort)(_registers.PC + 1)), bus.Read((ushort)(_registers.PC + 2)),
+                _registers.A, _registers.B, _registers.D, _registers.H,
+                _registers.F, _registers.C, _registers.E, _registers.L,
+                _registers.Flags.Z, _registers.Flags.N, _registers.Flags.H, _registers.Flags.C);
+            _instruction.Exec(this);
         }
 
         return true;
@@ -99,11 +108,13 @@ public sealed class Cpu(Bus bus, ILogger<Cpu> logger)
 }
 
 [StructLayout(LayoutKind.Explicit)]
-public struct CpuRegisters
+public record struct CpuRegisters
 {
     [FieldOffset(0)] public ushort AF;
     [FieldOffset(0)] public byte A;
     [FieldOffset(1)] public byte F;
+
+    [FieldOffset(1)] public CpuFlags Flags;
 
     [FieldOffset(2)] public ushort BC;
     [FieldOffset(2)] public byte B;
@@ -119,4 +130,14 @@ public struct CpuRegisters
 
     [FieldOffset(8)] public ushort PC;
     [FieldOffset(10)] public ushort SP;
+}
+
+public record struct CpuFlags
+{
+    public byte _0;
+
+    public bool Z { readonly get => _0.HasBitSet(7); set => _0.SetBit(7, value); }
+    public bool N { readonly get => _0.HasBitSet(6); set => _0.SetBit(6, value); }
+    public bool H { readonly get => _0.HasBitSet(5); set => _0.SetBit(5, value); }
+    public bool C { readonly get => _0.HasBitSet(4); set => _0.SetBit(4, value); }
 }
