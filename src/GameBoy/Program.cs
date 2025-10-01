@@ -1,2 +1,1 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿await Emulator.RunAsync(@"C:\Users\sadic\Downloads\Super Mario Land (World).gb");
