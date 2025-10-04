@@ -29,7 +29,7 @@ public sealed class Emulator(Cpu cpu, ILogger<Emulator> logger)
         }
         catch (Exception ex)
         {
-            logger.LogError("{message}", ex.Message);
+            logger.LogError(ex, "{message}", ex.Message);
         }
     }
 

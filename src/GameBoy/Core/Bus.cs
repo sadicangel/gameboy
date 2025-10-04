@@ -1,4 +1,6 @@
-﻿namespace GameBoy.Core;
+﻿using System.Buffers.Binary;
+
+namespace GameBoy.Core;
 
 [Singleton]
 public sealed class Bus(Cartridge cartridge)
@@ -17,13 +19,15 @@ public sealed class Bus(Cartridge cartridge)
     // 0xFF00 - 0xFF7F : I/O Registers
     // 0xFF80 - 0xFFFE : Zero Page
 
-    public byte Read(ushort address) => address switch
+    public byte ReadByte(ushort address) => address switch
     {
         < 0x8000 => cartridge.Read(address),
         _ => throw new NotImplementedException(),
     };
 
-    public void Write(ushort address, byte value)
+    public ushort ReadWord(ushort address) => BinaryPrimitives.ReadUInt16LittleEndian([ReadByte(address), ReadByte((ushort)(address + 1))]);
+
+    public void WriteByte(ushort address, byte value)
     {
         switch (address)
         {
@@ -34,5 +38,13 @@ public sealed class Bus(Cartridge cartridge)
             default:
                 throw new NotImplementedException();
         }
+    }
+
+    public void WriteWord(ushort address, ushort value)
+    {
+        Span<byte> buffer = stackalloc byte[2];
+        BinaryPrimitives.WriteUInt16LittleEndian(buffer, value);
+        WriteByte(address, buffer[0]);
+        WriteByte((ushort)(address + 1), buffer[1]);
     }
 }
