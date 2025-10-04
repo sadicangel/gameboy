@@ -30,7 +30,7 @@ public static class OpcodeExtensions
             .OrderBy(x => (byte)x.GetRawConstantValue()!)
             .Select(x => x.GetCustomAttribute<DescriptionAttribute>()!.Description)];
 
-    private static readonly unsafe delegate*<Instruction, Bus, ref CpuRegisters, byte>[] s_functionTable = [
+    private static readonly unsafe delegate*<Cpu, Mmu, Instruction, byte>[] s_functionTable = [
         &Ops.NOP,
         &Ops.LD_BC_d16,
         &Ops.LD_ptr_BC_A,
@@ -293,6 +293,6 @@ public static class OpcodeExtensions
     {
         public byte ImmediateByteCount => s_immediateByteCounts[(byte)opcode];
         public string Description => s_descriptions[(byte)opcode];
-        public unsafe delegate*<Instruction, Bus, ref CpuRegisters, byte> Exec => s_functionTable[(byte)opcode];
+        public unsafe delegate*<Cpu, Mmu, Instruction, byte> Exec => s_functionTable[(byte)opcode];
     }
 }

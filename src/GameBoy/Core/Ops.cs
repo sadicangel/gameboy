@@ -19,1660 +19,1662 @@ public static class Ops
 
     private static void SetHSubCarry(ref this CpuFlags flags, byte b1, byte b2) => flags.H = (b1 & 0xF) < ((b2 & 0xF) + (flags.C ? 1 : 0));
 
-    private static byte INC(this ref CpuRegisters registers, ref byte register)
+    private static byte INC(this Cpu cpu, ref byte register)
     {
         register++;
-        registers.Flags.SetZ(register);
-        registers.Flags.N = false;
-        registers.Flags.SetH(register, 1);
+        cpu.Registers.Flags.SetZ(register);
+        cpu.Registers.Flags.N = false;
+        cpu.Registers.Flags.SetH(register, 1);
 
         return 4;
     }
 
-    private static byte DEC(this ref CpuRegisters registers, ref byte register)
+    private static byte DEC(this Cpu cpu, ref byte register)
     {
         register--;
-        registers.Flags.SetZ(register);
-        registers.Flags.N = true;
-        registers.Flags.SetHSub(register, 1);
+        cpu.Registers.Flags.SetZ(register);
+        cpu.Registers.Flags.N = true;
+        cpu.Registers.Flags.SetHSub(register, 1);
 
         return 4;
     }
 
-    private static byte DAD(this ref CpuRegisters registers, ushort value)
+    private static byte DAD(this Cpu cpu, ushort value)
     {
-        var result = registers.HL + value;
-        registers.Flags.N = false;
-        registers.Flags.SetH(registers.HL, value);
-        registers.Flags.C = result >> 16 != 0;
-        registers.HL = (ushort)result;
+        var result = cpu.Registers.HL + value;
+        cpu.Registers.Flags.N = false;
+        cpu.Registers.Flags.SetH(cpu.Registers.HL, value);
+        cpu.Registers.Flags.C = result >> 16 != 0;
+        cpu.Registers.HL = (ushort)result;
 
         return 8;
     }
 
-    private static byte ADD(this ref CpuRegisters registers, byte value)
+    private static byte ADD(this Cpu cpu, byte value)
     {
-        var result = registers.A + value;
-        registers.Flags.SetZ(result);
-        registers.Flags.N = false;
-        registers.Flags.SetH(registers.A, value);
-        registers.Flags.SetC(result);
-        registers.A = (byte)result;
+        var result = cpu.Registers.A + value;
+        cpu.Registers.Flags.SetZ(result);
+        cpu.Registers.Flags.N = false;
+        cpu.Registers.Flags.SetH(cpu.Registers.A, value);
+        cpu.Registers.Flags.SetC(result);
+        cpu.Registers.A = (byte)result;
 
         return 4;
     }
 
-    private static byte ADC(this ref CpuRegisters registers, byte value)
+    private static byte ADC(this Cpu cpu, byte value)
     {
-        var carry = registers.Flags.C ? 1 : 0;
-        var result = registers.A + value + carry;
-        registers.Flags.SetZ(result);
-        registers.Flags.N = false;
-        if (registers.Flags.C)
-            registers.Flags.SetHCarry(registers.A, value);
+        var carry = cpu.Registers.Flags.C ? 1 : 0;
+        var result = cpu.Registers.A + value + carry;
+        cpu.Registers.Flags.SetZ(result);
+        cpu.Registers.Flags.N = false;
+        if (cpu.Registers.Flags.C)
+            cpu.Registers.Flags.SetHCarry(cpu.Registers.A, value);
         else
-            registers.Flags.SetH(registers.A, value);
-        registers.Flags.SetC(result);
-        registers.A = (byte)result;
+            cpu.Registers.Flags.SetH(cpu.Registers.A, value);
+        cpu.Registers.Flags.SetC(result);
+        cpu.Registers.A = (byte)result;
 
         return 4;
     }
 
-    private static byte SUB(this ref CpuRegisters registers, byte value)
+    private static byte SUB(this Cpu cpu, byte value)
     {
-        var result = registers.A - value;
-        registers.Flags.SetZ(result);
-        registers.Flags.N = true;
-        registers.Flags.SetHSub(registers.A, value);
-        registers.Flags.SetC(result);
-        registers.A = (byte)result;
+        var result = cpu.Registers.A - value;
+        cpu.Registers.Flags.SetZ(result);
+        cpu.Registers.Flags.N = true;
+        cpu.Registers.Flags.SetHSub(cpu.Registers.A, value);
+        cpu.Registers.Flags.SetC(result);
+        cpu.Registers.A = (byte)result;
 
         return 4;
     }
 
-    private static byte SBC(this ref CpuRegisters registers, byte value)
+    private static byte SBC(this Cpu cpu, byte value)
     {
-        var carry = registers.Flags.C ? 1 : 0;
-        var result = registers.A - value - carry;
-        registers.Flags.SetZ(result);
-        registers.Flags.N = true;
-        if (registers.Flags.C)
-            registers.Flags.SetHSubCarry(registers.A, value);
+        var carry = cpu.Registers.Flags.C ? 1 : 0;
+        var result = cpu.Registers.A - value - carry;
+        cpu.Registers.Flags.SetZ(result);
+        cpu.Registers.Flags.N = true;
+        if (cpu.Registers.Flags.C)
+            cpu.Registers.Flags.SetHSubCarry(cpu.Registers.A, value);
         else
-            registers.Flags.SetHSub(registers.A, value);
-        registers.Flags.SetC(result);
-        registers.A = (byte)result;
+            cpu.Registers.Flags.SetHSub(cpu.Registers.A, value);
+        cpu.Registers.Flags.SetC(result);
+        cpu.Registers.A = (byte)result;
 
         return 4;
     }
 
-    private static byte AND(this ref CpuRegisters registers, byte value)
+    private static byte AND(this Cpu cpu, byte value)
     {
-        var result = (byte)(registers.A & value);
-        registers.Flags.SetZ(result);
-        registers.Flags.N = false;
-        registers.Flags.H = true;
-        registers.Flags.C = false;
-        registers.A = result;
+        var result = (byte)(cpu.Registers.A & value);
+        cpu.Registers.Flags.SetZ(result);
+        cpu.Registers.Flags.N = false;
+        cpu.Registers.Flags.H = true;
+        cpu.Registers.Flags.C = false;
+        cpu.Registers.A = result;
 
         return 4;
     }
 
-    private static byte XOR(this ref CpuRegisters registers, byte value)
+    private static byte XOR(this Cpu cpu, byte value)
     {
-        var result = (byte)(registers.A ^ value);
-        registers.Flags.SetZ(result);
-        registers.Flags.N = false;
-        registers.Flags.H = false;
-        registers.Flags.C = false;
-        registers.A = result;
+        var result = (byte)(cpu.Registers.A ^ value);
+        cpu.Registers.Flags.SetZ(result);
+        cpu.Registers.Flags.N = false;
+        cpu.Registers.Flags.H = false;
+        cpu.Registers.Flags.C = false;
+        cpu.Registers.A = result;
 
         return 4;
     }
 
-    private static byte OR(this ref CpuRegisters registers, byte value)
+    private static byte OR(this Cpu cpu, byte value)
     {
-        var result = (byte)(registers.A | value);
-        registers.Flags.SetZ(result);
-        registers.Flags.N = false;
-        registers.Flags.H = false;
-        registers.Flags.C = false;
-        registers.A = result;
+        var result = (byte)(cpu.Registers.A | value);
+        cpu.Registers.Flags.SetZ(result);
+        cpu.Registers.Flags.N = false;
+        cpu.Registers.Flags.H = false;
+        cpu.Registers.Flags.C = false;
+        cpu.Registers.A = result;
 
         return 4;
     }
 
-    private static byte CP(this ref CpuRegisters registers, byte value)
+    private static byte CP(this Cpu cpu, byte value)
     {
-        var result = registers.A - value;
-        registers.Flags.SetZ(result);
-        registers.Flags.N = true;
-        registers.Flags.SetHSub(registers.A, value);
-        registers.Flags.SetC(result);
+        var result = cpu.Registers.A - value;
+        cpu.Registers.Flags.SetZ(result);
+        cpu.Registers.Flags.N = true;
+        cpu.Registers.Flags.SetHSub(cpu.Registers.A, value);
+        cpu.Registers.Flags.SetC(result);
 
         return 4;
     }
 
-    private static byte JR(this ref CpuRegisters registers, sbyte address, bool flag)
+    private static byte JR(this Cpu cpu, sbyte address, bool flag)
     {
         if (!flag)
         {
             return 8;
         }
 
-        registers.PC = (ushort)(registers.PC + address);
+        cpu.Registers.PC = (ushort)(cpu.Registers.PC + address);
 
         return 12;
     }
 
-    private static byte JP(this ref CpuRegisters registers, ushort address, bool flag)
+    private static byte JP(this Cpu cpu, ushort address, bool flag)
     {
         if (!flag)
         {
             return 12;
         }
 
-        registers.PC = address;
+        cpu.Registers.PC = address;
 
         return 16;
     }
 
-    private static byte RET(this ref CpuRegisters registers, Bus bus, bool flag)
+    private static byte RET(this Cpu cpu, Mmu mmu, bool flag)
     {
         if (!flag)
         {
             return 8;
         }
 
-        registers.PC = registers.POP(bus);
+        cpu.Registers.PC = cpu.POP(mmu);
 
         return 20;
     }
 
-    private static byte CALL(this ref CpuRegisters registers, Bus bus, ushort address, bool flag)
+    private static byte CALL(this Cpu cpu, Mmu mmu, ushort address, bool flag)
     {
         if (!flag)
         {
             return 12;
         }
 
-        registers.PUSH(bus, registers.PC);
-        registers.PC = address;
+        cpu.PUSH(mmu, cpu.Registers.PC);
+        cpu.Registers.PC = address;
 
         return 24;
     }
 
-    private static byte RST(this ref CpuRegisters registers, Bus bus, byte value)
+    private static byte RST(this Cpu cpu, Mmu mmu, byte value)
     {
-        registers.PUSH(bus, registers.PC);
-        registers.PC = value;
+        cpu.PUSH(mmu, cpu.Registers.PC);
+        cpu.Registers.PC = value;
 
         return 16;
     }
 
-    private static void PUSH(this CpuRegisters registers, Bus bus, ushort word)
+    private static void PUSH(this Cpu cpu, Mmu mmu, ushort word)
     {
-        registers.SP -= 2;
-        bus.WriteWord(registers.SP, word);
+        cpu.Registers.SP -= 2;
+        mmu.WriteWord(cpu.Registers.SP, word);
     }
 
-    private static ushort POP(this CpuRegisters registers, Bus bus)
+    private static ushort POP(this Cpu cpu, Mmu mmu)
     {
-        var result = bus.ReadWord(registers.SP);
-        registers.SP += 2;
+        var result = mmu.ReadWord(cpu.Registers.SP);
+        cpu.Registers.SP += 2;
         return result;
     }
 
-    public static byte NOP(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte NOP(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         return 4;
     }
 
-    public static byte LD_BC_d16(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_BC_d16(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.BC = instruction.N16;
+        cpu.Registers.BC = instruction.N16;
         return 12;
     }
 
-    public static byte LD_ptr_BC_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_ptr_BC_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        bus.WriteByte(registers.BC, registers.A);
+        mmu.WriteByte(cpu.Registers.BC, cpu.Registers.A);
         return 8;
     }
 
-    public static byte INC_BC(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte INC_BC(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.BC++;
+        cpu.Registers.BC++;
         return 8;
     }
 
-    public static byte INC_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte INC_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.INC(ref registers.B);
+        return cpu.INC(ref cpu.Registers.B);
     }
 
-    public static byte DEC_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte DEC_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.DEC(ref registers.B);
+        return cpu.DEC(ref cpu.Registers.B);
     }
 
-    public static byte LD_B_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_B_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.B = instruction.N8;
+        cpu.Registers.B = instruction.N8;
         return 8;
     }
 
-    public static byte RLCA(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RLCA(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.F = 0;
-        registers.Flags.C = (registers.A & 0x80) != 0;
-        registers.A = (byte)(registers.A << 1 | registers.A >> 7);
+        cpu.Registers.F = 0;
+        cpu.Registers.Flags.C = (cpu.Registers.A & 0x80) != 0;
+        cpu.Registers.A = (byte)(cpu.Registers.A << 1 | cpu.Registers.A >> 7);
         return 4;
     }
 
-    public static byte LD_ptr_a16_SP(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_ptr_a16_SP(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        bus.WriteWord(registers.SP, instruction.N16);
+        mmu.WriteWord(cpu.Registers.SP, instruction.N16);
         return 20;
     }
 
-    public static byte ADD_HL_BC(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADD_HL_BC(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.DAD(registers.BC);
+        return cpu.DAD(cpu.Registers.BC);
     }
 
-    public static byte LD_A_ptr_BC(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_A_ptr_BC(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.A = bus.ReadByte(registers.BC);
+        cpu.Registers.A = mmu.ReadByte(cpu.Registers.BC);
         return 8;
     }
 
-    public static byte DEC_BC(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte DEC_BC(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.BC--;
+        cpu.Registers.BC--;
         return 8;
     }
 
-    public static byte INC_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte INC_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.INC(ref registers.C);
+        return cpu.INC(ref cpu.Registers.C);
     }
 
-    public static byte DEC_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte DEC_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.DEC(ref registers.C);
+        return cpu.DEC(ref cpu.Registers.C);
     }
 
-    public static byte LD_C_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_C_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.C = instruction.N8;
+        cpu.Registers.C = instruction.N8;
         return 8;
     }
 
-    public static byte RRCA(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RRCA(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.F = 0;
-        registers.Flags.C = ((registers.A & 0x1) != 0);
-        registers.A = (byte)(registers.A >> 1 | registers.A << 7);
+        cpu.Registers.F = 0;
+        cpu.Registers.Flags.C = ((cpu.Registers.A & 0x1) != 0);
+        cpu.Registers.A = (byte)(cpu.Registers.A >> 1 | cpu.Registers.A << 7);
         return 4;
     }
 
-    public static byte STOP_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte STOP_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new NotImplementedException(instruction.Opcode.Description);
         // return 4;
     }
 
-    public static byte LD_DE_d16(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_DE_d16(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.DE = instruction.N16;
+        cpu.Registers.DE = instruction.N16;
         return 12;
     }
 
-    public static byte LD_ptr_DE_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_ptr_DE_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        bus.WriteByte(registers.DE, registers.A);
+        mmu.WriteByte(cpu.Registers.DE, cpu.Registers.A);
         return 8;
     }
 
-    public static byte INC_DE(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte INC_DE(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.DE++;
+        cpu.Registers.DE++;
         return 8;
     }
 
-    public static byte INC_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte INC_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.INC(ref registers.D);
+        return cpu.INC(ref cpu.Registers.D);
     }
 
-    public static byte DEC_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte DEC_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.DEC(ref registers.D);
+        return cpu.DEC(ref cpu.Registers.D);
     }
 
-    public static byte LD_D_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_D_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.D = instruction.N8;
+        cpu.Registers.D = instruction.N8;
         return 8;
     }
 
-    public static byte RLA(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RLA(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        var prevFlagC = registers.Flags.C;
-        registers.F = 0;
-        registers.Flags.C = ((registers.A & 0x80) != 0);
-        registers.A = (byte)((registers.A << 1) | (prevFlagC ? 1 : 0));
+        var prevFlagC = cpu.Registers.Flags.C;
+        cpu.Registers.F = 0;
+        cpu.Registers.Flags.C = ((cpu.Registers.A & 0x80) != 0);
+        cpu.Registers.A = (byte)((cpu.Registers.A << 1) | (prevFlagC ? 1 : 0));
         return 4;
     }
 
-    public static byte JR_e8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte JR_e8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.JR(instruction.E8, flag: true);
+        return cpu.JR(instruction.E8, flag: true);
     }
 
-    public static byte ADD_HL_DE(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADD_HL_DE(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.DAD(registers.DE);
+        return cpu.DAD(cpu.Registers.DE);
     }
 
-    public static byte LD_A_ptr_DE(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_A_ptr_DE(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.A = bus.ReadByte(registers.DE);
+        cpu.Registers.A = mmu.ReadByte(cpu.Registers.DE);
         return 8;
     }
 
-    public static byte DEC_DE(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte DEC_DE(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.DE--;
+        cpu.Registers.DE--;
         return 8;
     }
 
-    public static byte INC_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte INC_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.INC(ref registers.E);
+        return cpu.INC(ref cpu.Registers.E);
     }
 
-    public static byte DEC_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte DEC_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.DEC(ref registers.E);
+        return cpu.DEC(ref cpu.Registers.E);
     }
 
-    public static byte LD_E_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_E_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.E = instruction.N8;
+        cpu.Registers.E = instruction.N8;
         return 8;
     }
 
-    public static byte RRA(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RRA(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        var prevFlagC = registers.Flags.C;
-        registers.F = 0;
-        registers.Flags.C = ((registers.A & 0x1) != 0);
-        registers.A = (byte)((registers.A >> 1) | (prevFlagC ? 0x80 : 0));
+        var prevFlagC = cpu.Registers.Flags.C;
+        cpu.Registers.F = 0;
+        cpu.Registers.Flags.C = ((cpu.Registers.A & 0x1) != 0);
+        cpu.Registers.A = (byte)((cpu.Registers.A >> 1) | (prevFlagC ? 0x80 : 0));
         return 4;
     }
 
-    public static byte JR_NZ_e8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte JR_NZ_e8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.JR(instruction.E8, !registers.Flags.Z);
+        return cpu.JR(instruction.E8, !cpu.Registers.Flags.Z);
     }
 
-    public static byte LD_HL_d16(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_HL_d16(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.HL = instruction.N16;
+        cpu.Registers.HL = instruction.N16;
         return 12;
     }
 
-    public static byte LD_HLI_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_HLI_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        bus.WriteByte(registers.HL++, registers.A);
+        mmu.WriteByte(cpu.Registers.HL++, cpu.Registers.A);
         return 8;
     }
 
-    public static byte INC_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte INC_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.HL++;
+        cpu.Registers.HL++;
         return 8;
     }
 
-    public static byte INC_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte INC_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.INC(ref registers.H);
+        return cpu.INC(ref cpu.Registers.H);
     }
 
-    public static byte DEC_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte DEC_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.DEC(ref registers.H);
+        return cpu.DEC(ref cpu.Registers.H);
     }
 
-    public static byte LD_H_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_H_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.H = instruction.N8;
+        cpu.Registers.H = instruction.N8;
         return 8;
     }
 
-    public static byte DAA(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte DAA(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        if (registers.Flags.N)
+        if (cpu.Registers.Flags.N)
         {
-            // sub
-            if (registers.Flags.C) { registers.A -= 0x60; }
-            if (registers.Flags.H) { registers.A -= 0x6; }
+            if (cpu.Registers.Flags.C)
+                cpu.Registers.A -= 0x60;
+            if (cpu.Registers.Flags.H)
+                cpu.Registers.A -= 0x6;
         }
         else
         {
-            // add
-            if (registers.Flags.C || (registers.A > 0x99)) { registers.A += 0x60; registers.Flags.C = true; }
-            if (registers.Flags.H || (registers.A & 0xF) > 0x9) { registers.A += 0x6; }
+            if (cpu.Registers.Flags.C || (cpu.Registers.A > 0x99))
+                cpu.Registers.A += 0x60; cpu.Registers.Flags.C = true;
+            if (cpu.Registers.Flags.H || (cpu.Registers.A & 0xF) > 0x9)
+                cpu.Registers.A += 0x6;
         }
-        registers.Flags.SetZ(registers.A);
-        registers.Flags.H = false;
+        cpu.Registers.Flags.SetZ(cpu.Registers.A);
+        cpu.Registers.Flags.H = false;
         return 4;
     }
 
-    public static byte JR_Z_e8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte JR_Z_e8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.JR(instruction.E8, registers.Flags.Z);
+        return cpu.JR(instruction.E8, cpu.Registers.Flags.Z);
     }
 
-    public static byte ADD_HL_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADD_HL_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.DAD(registers.HL);
+        return cpu.DAD(cpu.Registers.HL);
     }
 
-    public static byte LD_A_HLI(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_A_HLI(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.A = bus.ReadByte(registers.HL++);
+        cpu.Registers.A = mmu.ReadByte(cpu.Registers.HL++);
         return 8;
     }
 
-    public static byte DEC_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte DEC_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.HL--;
+        cpu.Registers.HL--;
         return 8;
     }
 
-    public static byte INC_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte INC_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.INC(ref registers.L);
+        return cpu.INC(ref cpu.Registers.L);
     }
 
-    public static byte DEC_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte DEC_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.DEC(ref registers.L);
+        return cpu.DEC(ref cpu.Registers.L);
     }
 
-    public static byte LD_L_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_L_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.L = instruction.N8;
+        cpu.Registers.L = instruction.N8;
         return 8;
     }
 
-    public static byte CPL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte CPL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.A = (byte)~registers.A;
-        registers.Flags.N = true;
-        registers.Flags.H = true;
+        cpu.Registers.A = (byte)~cpu.Registers.A;
+        cpu.Registers.Flags.N = true;
+        cpu.Registers.Flags.H = true;
         return 4;
     }
 
-    public static byte JR_NC_e8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte JR_NC_e8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.JR(instruction.E8, !registers.Flags.C);
+        return cpu.JR(instruction.E8, !cpu.Registers.Flags.C);
     }
 
-    public static byte LD_SP_d16(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_SP_d16(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.SP = instruction.N16;
+        cpu.Registers.SP = instruction.N16;
         return 12;
     }
 
-    public static byte LD_HLD_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_HLD_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        bus.WriteByte(registers.HL--, registers.A);
+        mmu.WriteByte(cpu.Registers.HL--, cpu.Registers.A);
         return 8;
     }
 
-    public static byte INC_SP(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte INC_SP(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.SP++;
+        cpu.Registers.SP++;
         return 8;
     }
 
-    public static byte INC_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte INC_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        var value = bus.ReadByte(registers.HL);
-        registers.INC(ref value);
-        bus.WriteByte(registers.HL, value);
+        var value = mmu.ReadByte(cpu.Registers.HL);
+        cpu.INC(ref value);
+        mmu.WriteByte(cpu.Registers.HL, value);
         return 12;
     }
 
-    public static byte DEC_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte DEC_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        var value = bus.ReadByte(registers.HL);
-        registers.DEC(ref value);
-        bus.WriteByte(registers.HL, value);
+        var value = mmu.ReadByte(cpu.Registers.HL);
+        cpu.DEC(ref value);
+        mmu.WriteByte(cpu.Registers.HL, value);
         return 12;
     }
 
-    public static byte LD_ptr_HL_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_ptr_HL_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        bus.WriteByte(registers.HL, instruction.N8);
+        mmu.WriteByte(cpu.Registers.HL, instruction.N8);
         return 12;
     }
 
-    public static byte SCF(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SCF(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.Flags.C = true;
-        registers.Flags.N = false;
-        registers.Flags.H = false;
+        cpu.Registers.Flags.C = true;
+        cpu.Registers.Flags.N = false;
+        cpu.Registers.Flags.H = false;
         return 4;
     }
 
-    public static byte JR_C_e8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte JR_C_e8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.JR(instruction.E8, registers.Flags.C);
+        return cpu.JR(instruction.E8, cpu.Registers.Flags.C);
     }
 
-    public static byte ADD_HL_SP(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADD_HL_SP(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.DAD(registers.SP);
+        return cpu.DAD(cpu.Registers.SP);
     }
 
-    public static byte LD_A_HLD(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_A_HLD(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.A = bus.ReadByte(registers.HL--);
+        cpu.Registers.A = mmu.ReadByte(cpu.Registers.HL--);
         return 8;
     }
 
-    public static byte DEC_SP(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte DEC_SP(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.SP--;
+        cpu.Registers.SP--;
         return 8;
     }
 
-    public static byte INC_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte INC_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.INC(ref registers.A);
+        return cpu.INC(ref cpu.Registers.A);
     }
 
-    public static byte DEC_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte DEC_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.DEC(ref registers.A);
+        return cpu.DEC(ref cpu.Registers.A);
     }
 
-    public static byte LD_A_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_A_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.A = instruction.N8;
+        cpu.Registers.A = instruction.N8;
         return 8;
     }
 
-    public static byte CCF(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte CCF(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.Flags.C = !registers.Flags.C;
-        registers.Flags.N = false;
-        registers.Flags.H = false;
+        cpu.Registers.Flags.C = !cpu.Registers.Flags.C;
+        cpu.Registers.Flags.N = false;
+        cpu.Registers.Flags.H = false;
         return 4;
     }
 
-    public static byte LD_B_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_B_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        // registers.B = registers.B;
+        // cpu.Registers.B = cpu.Registers.B;
         return 4;
     }
 
-    public static byte LD_B_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_B_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.B = registers.C;
+        cpu.Registers.B = cpu.Registers.C;
         return 4;
     }
 
-    public static byte LD_B_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_B_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.B = registers.D;
+        cpu.Registers.B = cpu.Registers.D;
         return 4;
     }
 
-    public static byte LD_B_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_B_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.B = registers.E;
+        cpu.Registers.B = cpu.Registers.E;
         return 4;
     }
 
-    public static byte LD_B_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_B_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.B = registers.H;
+        cpu.Registers.B = cpu.Registers.H;
         return 4;
     }
 
-    public static byte LD_B_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_B_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.B = registers.L;
+        cpu.Registers.B = cpu.Registers.L;
         return 4;
     }
 
-    public static byte LD_B_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_B_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.B = bus.ReadByte(registers.HL);
+        cpu.Registers.B = mmu.ReadByte(cpu.Registers.HL);
         return 8;
     }
 
-    public static byte LD_B_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_B_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.B = registers.A;
+        cpu.Registers.B = cpu.Registers.A;
         return 4;
     }
 
-    public static byte LD_C_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_C_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.C = registers.B;
+        cpu.Registers.C = cpu.Registers.B;
         return 4;
     }
 
-    public static byte LD_C_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_C_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        // registers.C = registers.C;
+        // cpu.Registers.C = cpu.Registers.C;
         return 4;
     }
 
-    public static byte LD_C_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_C_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.C = registers.D;
+        cpu.Registers.C = cpu.Registers.D;
         return 4;
     }
 
-    public static byte LD_C_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_C_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.C = registers.E;
+        cpu.Registers.C = cpu.Registers.E;
         return 4;
     }
 
-    public static byte LD_C_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_C_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.C = registers.H;
+        cpu.Registers.C = cpu.Registers.H;
         return 4;
     }
 
-    public static byte LD_C_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_C_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.C = registers.L;
+        cpu.Registers.C = cpu.Registers.L;
         return 4;
     }
 
-    public static byte LD_C_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_C_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.C = bus.ReadByte(registers.HL);
+        cpu.Registers.C = mmu.ReadByte(cpu.Registers.HL);
         return 8;
     }
 
-    public static byte LD_C_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_C_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.C = registers.A;
+        cpu.Registers.C = cpu.Registers.A;
         return 4;
     }
 
-    public static byte LD_D_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_D_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.D = registers.B;
+        cpu.Registers.D = cpu.Registers.B;
         return 4;
     }
 
-    public static byte LD_D_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_D_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.D = registers.C;
+        cpu.Registers.D = cpu.Registers.C;
         return 4;
     }
 
-    public static byte LD_D_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_D_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        // registers.D = registers.D;
+        // cpu.Registers.D = cpu.Registers.D;
         return 4;
     }
 
-    public static byte LD_D_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_D_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.D = registers.E;
+        cpu.Registers.D = cpu.Registers.E;
         return 4;
     }
 
-    public static byte LD_D_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_D_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.D = registers.H;
+        cpu.Registers.D = cpu.Registers.H;
         return 4;
     }
 
-    public static byte LD_D_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_D_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.D = registers.L;
+        cpu.Registers.D = cpu.Registers.L;
         return 4;
     }
 
-    public static byte LD_D_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_D_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.D = bus.ReadByte(registers.HL);
+        cpu.Registers.D = mmu.ReadByte(cpu.Registers.HL);
         return 8;
     }
 
-    public static byte LD_D_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_D_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.D = registers.A;
+        cpu.Registers.D = cpu.Registers.A;
         return 4;
     }
 
-    public static byte LD_E_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_E_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.E = registers.B;
+        cpu.Registers.E = cpu.Registers.B;
         return 4;
     }
 
-    public static byte LD_E_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_E_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.E = registers.C;
+        cpu.Registers.E = cpu.Registers.C;
         return 4;
     }
 
-    public static byte LD_E_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_E_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.E = registers.D;
+        cpu.Registers.E = cpu.Registers.D;
         return 4;
     }
 
-    public static byte LD_E_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_E_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        // registers.E = registers.E;
+        // cpu.Registers.E = cpu.Registers.E;
         return 4;
     }
 
-    public static byte LD_E_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_E_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.E = registers.H;
+        cpu.Registers.E = cpu.Registers.H;
         return 4;
     }
 
-    public static byte LD_E_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_E_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.E = registers.L;
+        cpu.Registers.E = cpu.Registers.L;
         return 4;
     }
 
-    public static byte LD_E_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_E_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.E = bus.ReadByte(registers.HL);
+        cpu.Registers.E = mmu.ReadByte(cpu.Registers.HL);
         return 8;
     }
 
-    public static byte LD_E_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_E_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.E = registers.A;
+        cpu.Registers.E = cpu.Registers.A;
         return 4;
     }
 
-    public static byte LD_H_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_H_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.H = registers.B;
+        cpu.Registers.H = cpu.Registers.B;
         return 4;
     }
 
-    public static byte LD_H_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_H_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.H = registers.C;
+        cpu.Registers.H = cpu.Registers.C;
         return 4;
     }
 
-    public static byte LD_H_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_H_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.H = registers.D;
+        cpu.Registers.H = cpu.Registers.D;
         return 4;
     }
 
-    public static byte LD_H_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_H_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.H = registers.E;
+        cpu.Registers.H = cpu.Registers.E;
         return 4;
     }
 
-    public static byte LD_H_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_H_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        // registers.H = registers.H;
+        // cpu.Registers.H = cpu.Registers.H;
         return 4;
     }
 
-    public static byte LD_H_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_H_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.H = registers.L;
+        cpu.Registers.H = cpu.Registers.L;
         return 4;
     }
 
-    public static byte LD_H_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_H_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.H = bus.ReadByte(registers.HL);
+        cpu.Registers.H = mmu.ReadByte(cpu.Registers.HL);
         return 8;
     }
 
-    public static byte LD_H_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_H_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.H = registers.A;
+        cpu.Registers.H = cpu.Registers.A;
         return 4;
     }
 
-    public static byte LD_L_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_L_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.L = registers.B;
+        cpu.Registers.L = cpu.Registers.B;
         return 4;
     }
 
-    public static byte LD_L_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_L_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.L = registers.C;
+        cpu.Registers.L = cpu.Registers.C;
         return 4;
     }
 
-    public static byte LD_L_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_L_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.L = registers.D;
+        cpu.Registers.L = cpu.Registers.D;
         return 4;
     }
 
-    public static byte LD_L_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_L_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.L = registers.E;
+        cpu.Registers.L = cpu.Registers.E;
         return 4;
     }
 
-    public static byte LD_L_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_L_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.L = registers.H;
+        cpu.Registers.L = cpu.Registers.H;
         return 4;
     }
 
-    public static byte LD_L_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_L_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        // registers.L = registers.L;
+        // cpu.Registers.L = cpu.Registers.L;
         return 4;
     }
 
-    public static byte LD_L_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_L_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.L = bus.ReadByte(registers.HL);
+        cpu.Registers.L = mmu.ReadByte(cpu.Registers.HL);
         return 8;
     }
 
-    public static byte LD_L_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_L_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.L = registers.A;
+        cpu.Registers.L = cpu.Registers.A;
         return 4;
     }
 
-    public static byte LD_ptr_HL_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_ptr_HL_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        bus.WriteByte(registers.HL, registers.B);
+        mmu.WriteByte(cpu.Registers.HL, cpu.Registers.B);
         return 8;
     }
 
-    public static byte LD_ptr_HL_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_ptr_HL_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        bus.WriteByte(registers.HL, registers.C);
+        mmu.WriteByte(cpu.Registers.HL, cpu.Registers.C);
         return 8;
     }
 
-    public static byte LD_ptr_HL_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_ptr_HL_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        bus.WriteByte(registers.HL, registers.D);
+        mmu.WriteByte(cpu.Registers.HL, cpu.Registers.D);
         return 8;
     }
 
-    public static byte LD_ptr_HL_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_ptr_HL_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        bus.WriteByte(registers.HL, registers.E);
+        mmu.WriteByte(cpu.Registers.HL, cpu.Registers.E);
         return 8;
     }
 
-    public static byte LD_ptr_HL_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_ptr_HL_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        bus.WriteByte(registers.HL, registers.H);
+        mmu.WriteByte(cpu.Registers.HL, cpu.Registers.H);
         return 8;
     }
 
-    public static byte LD_ptr_HL_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_ptr_HL_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        bus.WriteByte(registers.HL, registers.L);
+        mmu.WriteByte(cpu.Registers.HL, cpu.Registers.L);
         return 8;
     }
 
-    public static byte HALT(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte HALT(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new NotImplementedException(instruction.Opcode.Description);
         // return 4;
     }
 
-    public static byte LD_ptr_HL_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_ptr_HL_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        bus.WriteByte(registers.HL, registers.A);
+        mmu.WriteByte(cpu.Registers.HL, cpu.Registers.A);
         return 8;
     }
 
-    public static byte LD_A_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_A_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.A = registers.B;
+        cpu.Registers.A = cpu.Registers.B;
         return 4;
     }
 
-    public static byte LD_A_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_A_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.A = registers.C;
+        cpu.Registers.A = cpu.Registers.C;
         return 4;
     }
 
-    public static byte LD_A_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_A_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.A = registers.D;
+        cpu.Registers.A = cpu.Registers.D;
         return 4;
     }
 
-    public static byte LD_A_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_A_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.A = registers.E;
+        cpu.Registers.A = cpu.Registers.E;
         return 4;
     }
 
-    public static byte LD_A_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_A_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.A = registers.H;
+        cpu.Registers.A = cpu.Registers.H;
         return 4;
     }
 
-    public static byte LD_A_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_A_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.A = registers.L;
+        cpu.Registers.A = cpu.Registers.L;
         return 4;
     }
 
-    public static byte LD_A_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.A = bus.ReadByte(registers.HL);
+        cpu.Registers.A = mmu.ReadByte(cpu.Registers.HL);
         return 8;
     }
 
-    public static byte LD_A_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        // registers.A = registers.A;
+        // cpu.Registers.A = cpu.Registers.A;
         return 4;
     }
 
-    public static byte ADD_A_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADD_A_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.ADD(registers.B);
+        return cpu.ADD(cpu.Registers.B);
     }
 
-    public static byte ADD_A_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADD_A_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.ADD(registers.C);
+        return cpu.ADD(cpu.Registers.C);
     }
 
-    public static byte ADD_A_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADD_A_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.ADD(registers.D);
+        return cpu.ADD(cpu.Registers.D);
     }
 
-    public static byte ADD_A_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADD_A_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.ADD(registers.E);
+        return cpu.ADD(cpu.Registers.E);
     }
 
-    public static byte ADD_A_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADD_A_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.ADD(registers.H);
+        return cpu.ADD(cpu.Registers.H);
     }
 
-    public static byte ADD_A_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADD_A_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.ADD(registers.L);
+        return cpu.ADD(cpu.Registers.L);
     }
 
-    public static byte ADD_A_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADD_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(registers.ADD(bus.ReadByte(registers.HL)) + 4);
+        return (byte)(cpu.ADD(mmu.ReadByte(cpu.Registers.HL)) + 4);
     }
 
-    public static byte ADD_A_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADD_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.ADD(registers.A);
+        return cpu.ADD(cpu.Registers.A);
     }
 
-    public static byte ADC_A_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADC_A_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.ADC(registers.B);
+        return cpu.ADC(cpu.Registers.B);
     }
 
-    public static byte ADC_A_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADC_A_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.ADC(registers.C);
+        return cpu.ADC(cpu.Registers.C);
     }
 
-    public static byte ADC_A_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADC_A_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.ADC(registers.D);
+        return cpu.ADC(cpu.Registers.D);
     }
 
-    public static byte ADC_A_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADC_A_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.ADC(registers.E);
+        return cpu.ADC(cpu.Registers.E);
     }
 
-    public static byte ADC_A_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADC_A_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.ADC(registers.H);
+        return cpu.ADC(cpu.Registers.H);
     }
 
-    public static byte ADC_A_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADC_A_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.ADC(registers.L);
+        return cpu.ADC(cpu.Registers.L);
     }
 
-    public static byte ADC_A_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADC_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(registers.ADC(bus.ReadByte(registers.HL)) + 4);
+        return (byte)(cpu.ADC(mmu.ReadByte(cpu.Registers.HL)) + 4);
     }
 
-    public static byte ADC_A_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADC_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.ADC(registers.A);
+        return cpu.ADC(cpu.Registers.A);
     }
 
-    public static byte SUB_A_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SUB_A_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.SUB(registers.B);
+        return cpu.SUB(cpu.Registers.B);
     }
 
-    public static byte SUB_A_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SUB_A_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.SUB(registers.C);
+        return cpu.SUB(cpu.Registers.C);
     }
 
-    public static byte SUB_A_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SUB_A_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.SUB(registers.D);
+        return cpu.SUB(cpu.Registers.D);
     }
 
-    public static byte SUB_A_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SUB_A_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.SUB(registers.E);
+        return cpu.SUB(cpu.Registers.E);
     }
 
-    public static byte SUB_A_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SUB_A_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.SUB(registers.H);
+        return cpu.SUB(cpu.Registers.H);
     }
 
-    public static byte SUB_A_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SUB_A_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.SUB(registers.L);
+        return cpu.SUB(cpu.Registers.L);
     }
 
-    public static byte SUB_A_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SUB_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(registers.SUB(bus.ReadByte(registers.HL)) + 4);
+        return (byte)(cpu.SUB(mmu.ReadByte(cpu.Registers.HL)) + 4);
     }
 
-    public static byte SUB_A_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SUB_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.SUB(registers.A);
+        return cpu.SUB(cpu.Registers.A);
     }
 
-    public static byte SBC_A_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SBC_A_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.SBC(registers.B);
+        return cpu.SBC(cpu.Registers.B);
     }
 
-    public static byte SBC_A_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SBC_A_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.SBC(registers.C);
+        return cpu.SBC(cpu.Registers.C);
     }
 
-    public static byte SBC_A_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SBC_A_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.SBC(registers.D);
+        return cpu.SBC(cpu.Registers.D);
     }
 
-    public static byte SBC_A_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SBC_A_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.SBC(registers.E);
+        return cpu.SBC(cpu.Registers.E);
     }
 
-    public static byte SBC_A_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SBC_A_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.SBC(registers.H);
+        return cpu.SBC(cpu.Registers.H);
     }
 
-    public static byte SBC_A_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SBC_A_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.SBC(registers.L);
+        return cpu.SBC(cpu.Registers.L);
     }
 
-    public static byte SBC_A_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SBC_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(registers.SBC(bus.ReadByte(registers.HL)) + 4);
+        return (byte)(cpu.SBC(mmu.ReadByte(cpu.Registers.HL)) + 4);
     }
 
-    public static byte SBC_A_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SBC_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.SBC(registers.A);
+        return cpu.SBC(cpu.Registers.A);
     }
 
-    public static byte AND_A_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte AND_A_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.AND(registers.B);
+        return cpu.AND(cpu.Registers.B);
     }
 
-    public static byte AND_A_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte AND_A_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.AND(registers.C);
+        return cpu.AND(cpu.Registers.C);
     }
 
-    public static byte AND_A_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte AND_A_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.AND(registers.D);
+        return cpu.AND(cpu.Registers.D);
     }
 
-    public static byte AND_A_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte AND_A_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.AND(registers.E);
+        return cpu.AND(cpu.Registers.E);
     }
 
-    public static byte AND_A_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte AND_A_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.AND(registers.H);
+        return cpu.AND(cpu.Registers.H);
     }
 
-    public static byte AND_A_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte AND_A_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.AND(registers.L);
+        return cpu.AND(cpu.Registers.L);
     }
 
-    public static byte AND_A_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte AND_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(registers.AND(bus.ReadByte(registers.HL)) + 4);
+        return (byte)(cpu.AND(mmu.ReadByte(cpu.Registers.HL)) + 4);
     }
 
-    public static byte AND_A_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte AND_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.AND(registers.A);
+        return cpu.AND(cpu.Registers.A);
     }
 
-    public static byte XOR_A_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte XOR_A_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.XOR(registers.B);
+        return cpu.XOR(cpu.Registers.B);
     }
 
-    public static byte XOR_A_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte XOR_A_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.XOR(registers.C);
+        return cpu.XOR(cpu.Registers.C);
     }
 
-    public static byte XOR_A_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte XOR_A_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.XOR(registers.D);
+        return cpu.XOR(cpu.Registers.D);
     }
 
-    public static byte XOR_A_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte XOR_A_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.XOR(registers.E);
+        return cpu.XOR(cpu.Registers.E);
     }
 
-    public static byte XOR_A_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte XOR_A_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.XOR(registers.H);
+        return cpu.XOR(cpu.Registers.H);
     }
 
-    public static byte XOR_A_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte XOR_A_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.XOR(registers.L);
+        return cpu.XOR(cpu.Registers.L);
     }
 
-    public static byte XOR_A_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte XOR_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(registers.XOR(bus.ReadByte(registers.HL)) + 4);
+        return (byte)(cpu.XOR(mmu.ReadByte(cpu.Registers.HL)) + 4);
     }
 
-    public static byte XOR_A_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte XOR_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.XOR(registers.A);
+        return cpu.XOR(cpu.Registers.A);
     }
 
-    public static byte OR_A_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte OR_A_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.OR(registers.B);
+        return cpu.OR(cpu.Registers.B);
     }
 
-    public static byte OR_A_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte OR_A_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.OR(registers.C);
+        return cpu.OR(cpu.Registers.C);
     }
 
-    public static byte OR_A_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte OR_A_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.OR(registers.D);
+        return cpu.OR(cpu.Registers.D);
     }
 
-    public static byte OR_A_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte OR_A_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.OR(registers.E);
+        return cpu.OR(cpu.Registers.E);
     }
 
-    public static byte OR_A_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte OR_A_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.OR(registers.H);
+        return cpu.OR(cpu.Registers.H);
     }
 
-    public static byte OR_A_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte OR_A_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.OR(registers.L);
+        return cpu.OR(cpu.Registers.L);
     }
 
-    public static byte OR_A_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte OR_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(registers.OR(bus.ReadByte(registers.HL)) + 4);
+        return (byte)(cpu.OR(mmu.ReadByte(cpu.Registers.HL)) + 4);
     }
 
-    public static byte OR_A_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte OR_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.OR(registers.A);
+        return cpu.OR(cpu.Registers.A);
     }
 
-    public static byte CP_A_B(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte CP_A_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.CP(registers.B);
+        return cpu.CP(cpu.Registers.B);
     }
 
-    public static byte CP_A_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte CP_A_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.CP(registers.C);
+        return cpu.CP(cpu.Registers.C);
     }
 
-    public static byte CP_A_D(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte CP_A_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.CP(registers.D);
+        return cpu.CP(cpu.Registers.D);
     }
 
-    public static byte CP_A_E(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte CP_A_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.CP(registers.E);
+        return cpu.CP(cpu.Registers.E);
     }
 
-    public static byte CP_A_H(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte CP_A_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.CP(registers.H);
+        return cpu.CP(cpu.Registers.H);
     }
 
-    public static byte CP_A_L(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte CP_A_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.CP(registers.L);
+        return cpu.CP(cpu.Registers.L);
     }
 
-    public static byte CP_A_ptr_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte CP_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(registers.CP(bus.ReadByte(registers.HL)) + 4);
+        return (byte)(cpu.CP(mmu.ReadByte(cpu.Registers.HL)) + 4);
     }
 
-    public static byte CP_A_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte CP_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.CP(registers.A);
+        return cpu.CP(cpu.Registers.A);
     }
 
-    public static byte RET_NZ(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RET_NZ(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.RET(bus, !registers.Flags.Z);
+        return cpu.RET(mmu, !cpu.Registers.Flags.Z);
     }
 
-    public static byte POP_BC(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte POP_BC(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.BC = registers.POP(bus);
+        cpu.Registers.BC = cpu.POP(mmu);
         return 12;
     }
 
-    public static byte JP_NZ_a16(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte JP_NZ_a16(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.JP(instruction.N16, !registers.Flags.Z);
+        return cpu.JP(instruction.N16, !cpu.Registers.Flags.Z);
     }
 
-    public static byte JP_a16(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte JP_a16(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.JP(instruction.N16, flag: true);
+        return cpu.JP(instruction.N16, flag: true);
     }
 
-    public static byte CALL_NZ_a16(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte CALL_NZ_a16(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.CALL(bus, instruction.N16, !registers.Flags.Z);
+        return cpu.CALL(mmu, instruction.N16, !cpu.Registers.Flags.Z);
     }
 
-    public static byte PUSH_BC(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte PUSH_BC(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.PUSH(bus, registers.BC);
+        cpu.PUSH(mmu, cpu.Registers.BC);
         return 16;
     }
 
-    public static byte ADD_A_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADD_A_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(registers.ADD(instruction.N8) + 4);
+        return (byte)(cpu.ADD(instruction.N8) + 4);
     }
 
-    public static byte RST_00(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RST_00(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.RST(bus, 0x00);
+        return cpu.RST(mmu, 0x00);
     }
 
-    public static byte RET_Z(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RET_Z(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.RET(bus, registers.Flags.Z);
+        return cpu.RET(mmu, cpu.Registers.Flags.Z);
     }
 
-    public static byte RET(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RET(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.RET(bus, flag: true);
+        return cpu.RET(mmu, flag: true);
     }
 
-    public static byte JP_Z_a16(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte JP_Z_a16(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.JP(instruction.N16, registers.Flags.Z);
+        return cpu.JP(instruction.N16, cpu.Registers.Flags.Z);
     }
 
-    public static byte PREFIX(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte PREFIX(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new NotImplementedException(instruction.Opcode.Description);
         // return 4;
     }
 
-    public static byte CALL_Z_a16(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte CALL_Z_a16(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.CALL(bus, instruction.N16, registers.Flags.Z);
+        return cpu.CALL(mmu, instruction.N16, cpu.Registers.Flags.Z);
     }
 
-    public static byte CALL_a16(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte CALL_a16(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.CALL(bus, instruction.N16, flag: true);
+        return cpu.CALL(mmu, instruction.N16, flag: true);
     }
 
-    public static byte ADC_A_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADC_A_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(registers.ADC(instruction.N8) + 4);
+        return (byte)(cpu.ADC(instruction.N8) + 4);
     }
 
-    public static byte RST_08(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RST_08(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.RST(bus, 0x08);
+        return cpu.RST(mmu, 0x08);
     }
 
-    public static byte RET_NC(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RET_NC(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.RET(bus, !registers.Flags.C);
+        return cpu.RET(mmu, !cpu.Registers.Flags.C);
     }
 
-    public static byte POP_DE(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte POP_DE(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.DE = registers.POP(bus);
+        cpu.Registers.DE = cpu.POP(mmu);
         return 12;
     }
 
-    public static byte JP_NC_a16(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte JP_NC_a16(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.JP(instruction.N16, !registers.Flags.C);
+        return cpu.JP(instruction.N16, !cpu.Registers.Flags.C);
     }
 
-    public static byte ILLEGAL_D3(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ILLEGAL_D3(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new InvalidOperationException(instruction.ToString());
     }
 
-    public static byte CALL_NC_a16(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte CALL_NC_a16(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.CALL(bus, instruction.N16, !registers.Flags.C);
+        return cpu.CALL(mmu, instruction.N16, !cpu.Registers.Flags.C);
     }
 
-    public static byte PUSH_DE(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte PUSH_DE(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.PUSH(bus, registers.DE);
+        cpu.PUSH(mmu, cpu.Registers.DE);
         return 16;
     }
 
-    public static byte SUB_A_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SUB_A_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(registers.SUB(instruction.N8) + 4);
+        return (byte)(cpu.SUB(instruction.N8) + 4);
     }
 
-    public static byte RST_10(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RST_10(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.RST(bus, 0x10);
+        return cpu.RST(mmu, 0x10);
     }
 
-    public static byte RET_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RET_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.RET(bus, registers.Flags.C);
+        return cpu.RET(mmu, cpu.Registers.Flags.C);
     }
 
-    public static byte RETI(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RETI(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new NotImplementedException(instruction.ToString());
-        // registers.RET(bus, flag: true);
-        // registers.IME = true;
+        // cpu.RET(mmu, flag: true);
+        // cpu.Registers.IME = true;
         // return 16;
     }
 
-    public static byte JP_C_a16(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte JP_C_a16(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.JP(instruction.N16, registers.Flags.C);
+        return cpu.JP(instruction.N16, cpu.Registers.Flags.C);
     }
 
-    public static byte ILLEGAL_DB(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ILLEGAL_DB(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new InvalidOperationException(instruction.ToString());
     }
 
-    public static byte CALL_C_a16(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte CALL_C_a16(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.CALL(bus, instruction.N16, registers.Flags.C);
+        return cpu.CALL(mmu, instruction.N16, cpu.Registers.Flags.C);
     }
 
-    public static byte ILLEGAL_DD(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ILLEGAL_DD(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new InvalidOperationException(instruction.ToString());
     }
 
-    public static byte SBC_A_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte SBC_A_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(registers.SBC(instruction.N8) + 4);
+        return (byte)(cpu.SBC(instruction.N8) + 4);
     }
 
-    public static byte RST_18(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RST_18(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.RST(bus, 0x18);
+        return cpu.RST(mmu, 0x18);
     }
 
-    public static byte LDH_ptr_a8_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LDH_ptr_a8_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        bus.WriteByte((ushort)(0xFF00 + instruction.N8), registers.A);
+        mmu.WriteByte((ushort)(0xFF00 + instruction.N8), cpu.Registers.A);
         return 12;
     }
 
-    public static byte POP_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte POP_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.HL = registers.POP(bus);
+        cpu.Registers.HL = cpu.POP(mmu);
         return 12;
     }
 
-    public static byte LDH_ptr_C_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LDH_ptr_C_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        bus.WriteByte((ushort)(0xFF00 + registers.C), registers.A);
+        mmu.WriteByte((ushort)(0xFF00 + cpu.Registers.C), cpu.Registers.A);
         return 8;
     }
 
-    public static byte ILLEGAL_E3(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ILLEGAL_E3(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new InvalidOperationException(instruction.ToString());
     }
 
-    public static byte ILLEGAL_E4(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ILLEGAL_E4(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new InvalidOperationException(instruction.ToString());
     }
 
-    public static byte PUSH_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte PUSH_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.PUSH(bus, registers.HL);
+        cpu.PUSH(mmu, cpu.Registers.HL);
         return 16;
     }
 
-    public static byte AND_A_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte AND_A_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(registers.AND(instruction.N8) + 4);
+        return (byte)(cpu.AND(instruction.N8) + 4);
     }
 
-    public static byte RST_20(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RST_20(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.RST(bus, 0x20);
+        return cpu.RST(mmu, 0x20);
     }
 
-    public static byte ADD_SP_e8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ADD_SP_e8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.Flags.Z = false;
-        registers.Flags.N = false;
-        registers.Flags.SetH((byte)registers.SP, instruction.N8);
-        registers.Flags.SetC((byte)registers.SP + instruction.N8);
-        registers.SP = (ushort)(registers.SP + instruction.E8);
+        cpu.Registers.Flags.Z = false;
+        cpu.Registers.Flags.N = false;
+        cpu.Registers.Flags.SetH((byte)cpu.Registers.SP, instruction.N8);
+        cpu.Registers.Flags.SetC((byte)cpu.Registers.SP + instruction.N8);
+        cpu.Registers.SP = (ushort)(cpu.Registers.SP + instruction.E8);
 
         return 16;
     }
 
-    public static byte JP_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte JP_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.PC = registers.HL;
+        cpu.Registers.PC = cpu.Registers.HL;
         return 4;
     }
 
-    public static byte LD_ptr_a16_A(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_ptr_a16_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        bus.WriteWord(instruction.N16, registers.A);
+        mmu.WriteWord(instruction.N16, cpu.Registers.A);
         return 16;
     }
 
-    public static byte ILLEGAL_EB(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ILLEGAL_EB(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new InvalidOperationException(instruction.ToString());
     }
 
-    public static byte ILLEGAL_EC(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ILLEGAL_EC(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new InvalidOperationException(instruction.ToString());
     }
 
-    public static byte ILLEGAL_ED(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ILLEGAL_ED(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new InvalidOperationException(instruction.ToString());
     }
 
-    public static byte XOR_A_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte XOR_A_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(registers.XOR(instruction.N8) + 4);
+        return (byte)(cpu.XOR(instruction.N8) + 4);
     }
 
-    public static byte RST_28(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RST_28(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.RST(bus, 0x28);
+        return cpu.RST(mmu, 0x28);
     }
 
-    public static byte LDH_A_ptr_a8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LDH_A_ptr_a8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.A = bus.ReadByte((ushort)(0xFF00 + instruction.N8));
+        cpu.Registers.A = mmu.ReadByte((ushort)(0xFF00 + instruction.N8));
         return 12;
     }
 
-    public static byte POP_AF(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte POP_AF(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.AF = registers.POP(bus);
+        cpu.Registers.AF = cpu.POP(mmu);
         return 12;
     }
 
-    public static byte LDH_A_ptr_C(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LDH_A_ptr_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.A = bus.ReadByte((ushort)(0xFF00 + registers.C));
+        cpu.Registers.A = mmu.ReadByte((ushort)(0xFF00 + cpu.Registers.C));
         return 8;
     }
 
-    public static byte DI(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte DI(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new NotImplementedException(instruction.ToString());
         // IME = false;
         // return 4;
     }
 
-    public static byte ILLEGAL_F4(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ILLEGAL_F4(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new InvalidOperationException(instruction.ToString());
     }
 
-    public static byte PUSH_AF(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte PUSH_AF(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.PUSH(bus, registers.AF);
+        cpu.PUSH(mmu, cpu.Registers.AF);
         return 16;
     }
 
-    public static byte OR_A_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte OR_A_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(registers.OR(instruction.N8) + 4);
+        return (byte)(cpu.OR(instruction.N8) + 4);
     }
 
-    public static byte RST_30(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RST_30(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.RST(bus, 0x30);
+        return cpu.RST(mmu, 0x30);
     }
 
-    public static byte LD_HL_SP_e8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_HL_SP_e8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.Flags.Z = false;
-        registers.Flags.N = false;
-        registers.Flags.SetH((byte)registers.SP, instruction.N8);
-        registers.Flags.SetC((byte)registers.SP + instruction.N8);
-        registers.HL = (ushort)(registers.SP + instruction.E8);
+        cpu.Registers.Flags.Z = false;
+        cpu.Registers.Flags.N = false;
+        cpu.Registers.Flags.SetH((byte)cpu.Registers.SP, instruction.N8);
+        cpu.Registers.Flags.SetC((byte)cpu.Registers.SP + instruction.N8);
+        cpu.Registers.HL = (ushort)(cpu.Registers.SP + instruction.E8);
 
         return 12;
     }
 
-    public static byte LD_SP_HL(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_SP_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.SP = registers.HL;
+        cpu.Registers.SP = cpu.Registers.HL;
         return 8;
     }
 
-    public static byte LD_A_ptr_a16(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte LD_A_ptr_a16(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        registers.A = bus.ReadByte(instruction.N16);
+        cpu.Registers.A = mmu.ReadByte(instruction.N16);
         return 16;
     }
 
-    public static byte EI(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte EI(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new NotImplementedException(instruction.ToString());
         // IMEEnabler = true;
         // return 4;
     }
 
-    public static byte ILLEGAL_FC(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ILLEGAL_FC(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new InvalidOperationException(instruction.ToString());
     }
 
-    public static byte ILLEGAL_FD(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte ILLEGAL_FD(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
         throw new InvalidOperationException(instruction.ToString());
     }
 
-    public static byte CP_A_d8(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte CP_A_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(registers.CP(instruction.N8) + 4);
+        return (byte)(cpu.CP(instruction.N8) + 4);
     }
 
-    public static byte RST_38(Instruction instruction, Bus bus, ref CpuRegisters registers)
+    public static byte RST_38(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return registers.RST(bus, 0x38);
+        return cpu.RST(mmu, 0x38);
     }
 }
