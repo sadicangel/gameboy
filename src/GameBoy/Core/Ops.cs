@@ -236,7 +236,7 @@ public static class Ops
 
     public static byte LD_ptr_BC_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        mmu.WriteByte(cpu.Registers.BC, cpu.Registers.A);
+        mmu.Write(cpu.Registers.BC, cpu.Registers.A);
         return 8;
     }
 
@@ -283,7 +283,7 @@ public static class Ops
 
     public static byte LD_A_ptr_BC(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        cpu.Registers.A = mmu.ReadByte(cpu.Registers.BC);
+        cpu.Registers.A = mmu.Read(cpu.Registers.BC);
         return 8;
     }
 
@@ -331,7 +331,7 @@ public static class Ops
 
     public static byte LD_ptr_DE_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        mmu.WriteByte(cpu.Registers.DE, cpu.Registers.A);
+        mmu.Write(cpu.Registers.DE, cpu.Registers.A);
         return 8;
     }
 
@@ -378,7 +378,7 @@ public static class Ops
 
     public static byte LD_A_ptr_DE(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        cpu.Registers.A = mmu.ReadByte(cpu.Registers.DE);
+        cpu.Registers.A = mmu.Read(cpu.Registers.DE);
         return 8;
     }
 
@@ -426,7 +426,7 @@ public static class Ops
 
     public static byte LD_HLI_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        mmu.WriteByte(cpu.Registers.HL++, cpu.Registers.A);
+        mmu.Write(cpu.Registers.HL++, cpu.Registers.A);
         return 8;
     }
 
@@ -485,7 +485,7 @@ public static class Ops
 
     public static byte LD_A_HLI(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        cpu.Registers.A = mmu.ReadByte(cpu.Registers.HL++);
+        cpu.Registers.A = mmu.Read(cpu.Registers.HL++);
         return 8;
     }
 
@@ -532,7 +532,7 @@ public static class Ops
 
     public static byte LD_HLD_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        mmu.WriteByte(cpu.Registers.HL--, cpu.Registers.A);
+        mmu.Write(cpu.Registers.HL--, cpu.Registers.A);
         return 8;
     }
 
@@ -544,23 +544,23 @@ public static class Ops
 
     public static byte INC_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        var value = mmu.ReadByte(cpu.Registers.HL);
+        var value = mmu.Read(cpu.Registers.HL);
         cpu.INC(ref value);
-        mmu.WriteByte(cpu.Registers.HL, value);
+        mmu.Write(cpu.Registers.HL, value);
         return 12;
     }
 
     public static byte DEC_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        var value = mmu.ReadByte(cpu.Registers.HL);
+        var value = mmu.Read(cpu.Registers.HL);
         cpu.DEC(ref value);
-        mmu.WriteByte(cpu.Registers.HL, value);
+        mmu.Write(cpu.Registers.HL, value);
         return 12;
     }
 
     public static byte LD_ptr_HL_d8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        mmu.WriteByte(cpu.Registers.HL, instruction.N8);
+        mmu.Write(cpu.Registers.HL, instruction.N8);
         return 12;
     }
 
@@ -584,7 +584,7 @@ public static class Ops
 
     public static byte LD_A_HLD(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        cpu.Registers.A = mmu.ReadByte(cpu.Registers.HL--);
+        cpu.Registers.A = mmu.Read(cpu.Registers.HL--);
         return 8;
     }
 
@@ -656,7 +656,7 @@ public static class Ops
 
     public static byte LD_B_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        cpu.Registers.B = mmu.ReadByte(cpu.Registers.HL);
+        cpu.Registers.B = mmu.Read(cpu.Registers.HL);
         return 8;
     }
 
@@ -704,7 +704,7 @@ public static class Ops
 
     public static byte LD_C_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        cpu.Registers.C = mmu.ReadByte(cpu.Registers.HL);
+        cpu.Registers.C = mmu.Read(cpu.Registers.HL);
         return 8;
     }
 
@@ -752,7 +752,7 @@ public static class Ops
 
     public static byte LD_D_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        cpu.Registers.D = mmu.ReadByte(cpu.Registers.HL);
+        cpu.Registers.D = mmu.Read(cpu.Registers.HL);
         return 8;
     }
 
@@ -800,7 +800,7 @@ public static class Ops
 
     public static byte LD_E_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        cpu.Registers.E = mmu.ReadByte(cpu.Registers.HL);
+        cpu.Registers.E = mmu.Read(cpu.Registers.HL);
         return 8;
     }
 
@@ -848,7 +848,7 @@ public static class Ops
 
     public static byte LD_H_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        cpu.Registers.H = mmu.ReadByte(cpu.Registers.HL);
+        cpu.Registers.H = mmu.Read(cpu.Registers.HL);
         return 8;
     }
 
@@ -896,7 +896,7 @@ public static class Ops
 
     public static byte LD_L_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        cpu.Registers.L = mmu.ReadByte(cpu.Registers.HL);
+        cpu.Registers.L = mmu.Read(cpu.Registers.HL);
         return 8;
     }
 
@@ -908,37 +908,37 @@ public static class Ops
 
     public static byte LD_ptr_HL_B(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        mmu.WriteByte(cpu.Registers.HL, cpu.Registers.B);
+        mmu.Write(cpu.Registers.HL, cpu.Registers.B);
         return 8;
     }
 
     public static byte LD_ptr_HL_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        mmu.WriteByte(cpu.Registers.HL, cpu.Registers.C);
+        mmu.Write(cpu.Registers.HL, cpu.Registers.C);
         return 8;
     }
 
     public static byte LD_ptr_HL_D(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        mmu.WriteByte(cpu.Registers.HL, cpu.Registers.D);
+        mmu.Write(cpu.Registers.HL, cpu.Registers.D);
         return 8;
     }
 
     public static byte LD_ptr_HL_E(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        mmu.WriteByte(cpu.Registers.HL, cpu.Registers.E);
+        mmu.Write(cpu.Registers.HL, cpu.Registers.E);
         return 8;
     }
 
     public static byte LD_ptr_HL_H(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        mmu.WriteByte(cpu.Registers.HL, cpu.Registers.H);
+        mmu.Write(cpu.Registers.HL, cpu.Registers.H);
         return 8;
     }
 
     public static byte LD_ptr_HL_L(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        mmu.WriteByte(cpu.Registers.HL, cpu.Registers.L);
+        mmu.Write(cpu.Registers.HL, cpu.Registers.L);
         return 8;
     }
 
@@ -950,7 +950,7 @@ public static class Ops
 
     public static byte LD_ptr_HL_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        mmu.WriteByte(cpu.Registers.HL, cpu.Registers.A);
+        mmu.Write(cpu.Registers.HL, cpu.Registers.A);
         return 8;
     }
 
@@ -992,7 +992,7 @@ public static class Ops
 
     public static byte LD_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        cpu.Registers.A = mmu.ReadByte(cpu.Registers.HL);
+        cpu.Registers.A = mmu.Read(cpu.Registers.HL);
         return 8;
     }
 
@@ -1034,7 +1034,7 @@ public static class Ops
 
     public static byte ADD_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(cpu.ADD(mmu.ReadByte(cpu.Registers.HL)) + 4);
+        return (byte)(cpu.ADD(mmu.Read(cpu.Registers.HL)) + 4);
     }
 
     public static byte ADD_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
@@ -1074,7 +1074,7 @@ public static class Ops
 
     public static byte ADC_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(cpu.ADC(mmu.ReadByte(cpu.Registers.HL)) + 4);
+        return (byte)(cpu.ADC(mmu.Read(cpu.Registers.HL)) + 4);
     }
 
     public static byte ADC_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
@@ -1114,7 +1114,7 @@ public static class Ops
 
     public static byte SUB_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(cpu.SUB(mmu.ReadByte(cpu.Registers.HL)) + 4);
+        return (byte)(cpu.SUB(mmu.Read(cpu.Registers.HL)) + 4);
     }
 
     public static byte SUB_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
@@ -1154,7 +1154,7 @@ public static class Ops
 
     public static byte SBC_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(cpu.SBC(mmu.ReadByte(cpu.Registers.HL)) + 4);
+        return (byte)(cpu.SBC(mmu.Read(cpu.Registers.HL)) + 4);
     }
 
     public static byte SBC_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
@@ -1194,7 +1194,7 @@ public static class Ops
 
     public static byte AND_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(cpu.AND(mmu.ReadByte(cpu.Registers.HL)) + 4);
+        return (byte)(cpu.AND(mmu.Read(cpu.Registers.HL)) + 4);
     }
 
     public static byte AND_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
@@ -1234,7 +1234,7 @@ public static class Ops
 
     public static byte XOR_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(cpu.XOR(mmu.ReadByte(cpu.Registers.HL)) + 4);
+        return (byte)(cpu.XOR(mmu.Read(cpu.Registers.HL)) + 4);
     }
 
     public static byte XOR_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
@@ -1274,7 +1274,7 @@ public static class Ops
 
     public static byte OR_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(cpu.OR(mmu.ReadByte(cpu.Registers.HL)) + 4);
+        return (byte)(cpu.OR(mmu.Read(cpu.Registers.HL)) + 4);
     }
 
     public static byte OR_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
@@ -1314,7 +1314,7 @@ public static class Ops
 
     public static byte CP_A_ptr_HL(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        return (byte)(cpu.CP(mmu.ReadByte(cpu.Registers.HL)) + 4);
+        return (byte)(cpu.CP(mmu.Read(cpu.Registers.HL)) + 4);
     }
 
     public static byte CP_A_A(this Cpu cpu, Mmu mmu, Instruction instruction)
@@ -1492,7 +1492,7 @@ public static class Ops
 
     public static byte LDH_ptr_a8_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        mmu.WriteByte((ushort)(0xFF00 + instruction.N8), cpu.Registers.A);
+        mmu.Write((ushort)(0xFF00 + instruction.N8), cpu.Registers.A);
         return 12;
     }
 
@@ -1504,7 +1504,7 @@ public static class Ops
 
     public static byte LDH_ptr_C_A(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        mmu.WriteByte((ushort)(0xFF00 + cpu.Registers.C), cpu.Registers.A);
+        mmu.Write((ushort)(0xFF00 + cpu.Registers.C), cpu.Registers.A);
         return 8;
     }
 
@@ -1584,7 +1584,7 @@ public static class Ops
 
     public static byte LDH_A_ptr_a8(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        cpu.Registers.A = mmu.ReadByte((ushort)(0xFF00 + instruction.N8));
+        cpu.Registers.A = mmu.Read((ushort)(0xFF00 + instruction.N8));
         return 12;
     }
 
@@ -1596,7 +1596,7 @@ public static class Ops
 
     public static byte LDH_A_ptr_C(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        cpu.Registers.A = mmu.ReadByte((ushort)(0xFF00 + cpu.Registers.C));
+        cpu.Registers.A = mmu.Read((ushort)(0xFF00 + cpu.Registers.C));
         return 8;
     }
 
@@ -1647,7 +1647,7 @@ public static class Ops
 
     public static byte LD_A_ptr_a16(this Cpu cpu, Mmu mmu, Instruction instruction)
     {
-        cpu.Registers.A = mmu.ReadByte(instruction.N16);
+        cpu.Registers.A = mmu.Read(instruction.N16);
         return 16;
     }
 

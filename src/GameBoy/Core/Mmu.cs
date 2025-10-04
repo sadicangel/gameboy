@@ -1,10 +1,14 @@
 ﻿using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 
 namespace GameBoy.Core;
 
 [Singleton]
 public sealed class Mmu(Cartridge cartridge)
 {
+    private readonly WRam _wram;
+    private readonly HRam _hram;
+
     // 0x0000 - 0x3FFF : ROM Bank 0
     // 0x4000 - 0x7FFF : ROM Bank 1 - Switchable
     // 0x8000 - 0x97FF : CHR RAM
@@ -19,15 +23,23 @@ public sealed class Mmu(Cartridge cartridge)
     // 0xFF00 - 0xFF7F : I/O Registers
     // 0xFF80 - 0xFFFE : Zero Page
 
-    public byte ReadByte(ushort address) => address switch
+    public byte Read(ushort address) => address switch
     {
         < 0x8000 => cartridge.Read(address),
-        _ => throw new NotImplementedException(),
+        < 0xA000 => throw new NotImplementedException("CHR RAM"),
+        < 0xC000 => cartridge.Read(address),
+        < 0xE000 => _wram.Read(address),
+        < 0xFE00 => _wram.Read(address),
+        < 0xFEA0 => throw new NotImplementedException("Object Attribute RAM"),
+        < 0xFF00 => 0x00,
+        < 0xFF80 => throw new NotImplementedException("I/O Registers"),
+        < 0xFFFF => _hram.Read(address),
+        _ => throw new NotImplementedException("CPU set enable register"),
     };
 
-    public ushort ReadWord(ushort address) => BinaryPrimitives.ReadUInt16LittleEndian([ReadByte(address), ReadByte((ushort)(address + 1))]);
+    public ushort ReadWord(ushort address) => BinaryPrimitives.ReadUInt16LittleEndian([Read(address), Read((ushort)(address + 1))]);
 
-    public void WriteByte(ushort address, byte value)
+    public void Write(ushort address, byte value)
     {
         switch (address)
         {
@@ -35,8 +47,37 @@ public sealed class Mmu(Cartridge cartridge)
                 cartridge.Write(address, value);
                 return;
 
+            case < 0xA000:
+                throw new NotImplementedException("CHR RAM");
+
+            case < 0xC000:
+                cartridge.Write(address, value);
+                return;
+
+            case < 0xE000:
+                _wram.Write(address, value);
+                return;
+
+            case < 0xFE00:
+                _wram.Write(address, value);
+                return;
+
+            case < 0xFEA0:
+                throw new NotImplementedException("Object Attribute RAM");
+
+            case < 0xFF00:
+                // Reserved
+                return;
+
+            case < 0xFF80:
+                throw new NotImplementedException("I/O Registers");
+
+            case < 0xFFFF:
+                _hram.Write(address, value);
+                return;
+
             default:
-                throw new NotImplementedException();
+                throw new NotImplementedException("CPU set enable register");
         }
     }
 
@@ -44,7 +85,27 @@ public sealed class Mmu(Cartridge cartridge)
     {
         Span<byte> buffer = stackalloc byte[2];
         BinaryPrimitives.WriteUInt16LittleEndian(buffer, value);
-        WriteByte(address, buffer[0]);
-        WriteByte((ushort)(address + 1), buffer[1]);
+        Write(address, buffer[0]);
+        Write((ushort)(address + 1), buffer[1]);
+    }
+
+    [InlineArray(0x2000)]
+    private struct WRam
+    {
+        private const ushort Offset = 0xC000;
+        public byte E0;
+
+        public readonly byte Read(ushort address) => this[address - Offset];
+        public void Write(ushort address, byte value) => this[address - Offset] = value;
+    }
+
+    [InlineArray(0x007F)]
+    private struct HRam
+    {
+        private const ushort Offset = 0xFF80;
+        public byte E0;
+
+        public readonly byte Read(ushort address) => this[address - Offset];
+        public void Write(ushort address, byte value) => this[address - Offset] = value;
     }
 }

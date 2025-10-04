@@ -29,7 +29,9 @@ public sealed class Cartridge
 
         var checksumSucceeded = Checksum(_data);
 
-        _logger.LogInformation("""
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("""
             Cartridge loaded:
                 Title.........: {Title}.
                 Type..........: {TypeValue} ({TypeName})
@@ -39,13 +41,14 @@ public sealed class Cartridge
                 ROM version...: {RomVersion}
                 Checksum......: {HeaderChecksum} ({HeaderChecksumTest})
             """,
-            Encoding.ASCII.GetString(_header.Title),
-            (byte)_header.CartridgeType, _header.CartridgeType,
-            32 << _header.RomSize,
-            _header.RamSize,
-            (byte)_header.NewLicenseeCode, _header.NewLicenseeCode,
-            _header.RomVersion,
-            _header.HeaderChecksum, (checksumSucceeded ? "PASS" : "FAIL"));
+                Encoding.ASCII.GetString(_header.Title),
+                (byte)_header.CartridgeType, _header.CartridgeType,
+                32 << _header.RomSize,
+                _header.RamSize,
+                (byte)_header.NewLicenseeCode, _header.NewLicenseeCode,
+                _header.RomVersion,
+                _header.HeaderChecksum, (checksumSucceeded ? "PASS" : "FAIL"));
+        }
 
         if (checksumSucceeded is false)
         {

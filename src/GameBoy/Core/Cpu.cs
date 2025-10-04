@@ -10,11 +10,11 @@ public sealed partial class Cpu(Mmu mmu, ILogger<Cpu> logger)
         PC = 0x100,
     };
 
-    //private ushort _memoryDestinaton;
     //private bool _halted = false;
-    //private ulong _cycles;
     //private bool _stepping;
     //private bool _masterInterruptsEnabled = true;
+
+    public ulong Cycles { get; private set; }
 
     public bool Step()
     {
@@ -35,8 +35,8 @@ public sealed partial class Cpu(Mmu mmu, ILogger<Cpu> logger)
                     Registers.F, Registers.C, Registers.E, Registers.L,
                     Convert.ToByte(Registers.Flags.Z), Convert.ToByte(Registers.Flags.N), Convert.ToByte(Registers.Flags.H), Convert.ToByte(Registers.Flags.C));
             }
-            var cycles = instruction.Exec(this, mmu);
-            Console.WriteLine(cycles);
+
+            Cycles += instruction.Exec(this, mmu);
         }
 
         return true;
@@ -44,7 +44,7 @@ public sealed partial class Cpu(Mmu mmu, ILogger<Cpu> logger)
 
     private Instruction FetchInstruction()
     {
-        var opcode = (Opcode)mmu.ReadByte(Registers.PC);
+        var opcode = (Opcode)mmu.Read(Registers.PC);
 
         if (opcode is Opcode.PREFIX)
         {
@@ -60,7 +60,7 @@ public sealed partial class Cpu(Mmu mmu, ILogger<Cpu> logger)
             case 0:
                 break;
             case 1:
-                instruction.N8 = mmu.ReadByte(Registers.PC);
+                instruction.N8 = mmu.Read(Registers.PC);
                 Registers.PC++;
                 break;
             case 2:
