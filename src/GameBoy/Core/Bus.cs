@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 namespace GameBoy.Core;
 
 [Singleton]
-public sealed class Mmu(Cartridge cartridge)
+public sealed class Bus(Cartridge cartridge)
 {
     private readonly WRam _wram;
     private readonly HRam _hram;

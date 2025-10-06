@@ -11,13 +11,7 @@ public struct Instruction(Opcode opcode)
     [field: FieldOffset(1)] public byte N8 { get; set; }
     [field: FieldOffset(1)] public sbyte E8 { get; set; }
     [field: FieldOffset(1)] public ushort N16 { get; set; }
-    public readonly byte Exec(Cpu cpu, Mmu mmu)
-    {
-        unsafe
-        {
-            return Opcode.Exec(cpu, mmu, this);
-        }
-    }
+    public readonly byte Exec(Cpu cpu) => Opcode.Exec(cpu, this);
 
     public override readonly string ToString() => Opcode.Description
         .Replace("n8", $"{N8:X2}")

@@ -3,7 +3,7 @@
 namespace GameBoy.Core;
 
 [Singleton]
-public sealed partial class Cpu(Mmu mmu, ILogger<Cpu> logger)
+public sealed partial class Cpu(Bus bus, ILogger<Cpu> logger)
 {
     public CpuRegisters Registers = new()
     {
@@ -36,7 +36,7 @@ public sealed partial class Cpu(Mmu mmu, ILogger<Cpu> logger)
                     Convert.ToByte(Registers.Flags.Z), Convert.ToByte(Registers.Flags.N), Convert.ToByte(Registers.Flags.H), Convert.ToByte(Registers.Flags.C));
             }
 
-            Cycles += instruction.Exec(this, mmu);
+            Cycles += instruction.Exec(this);
         }
 
         return true;
@@ -44,7 +44,7 @@ public sealed partial class Cpu(Mmu mmu, ILogger<Cpu> logger)
 
     private Instruction FetchInstruction()
     {
-        var opcode = (Opcode)mmu.Read(Registers.PC);
+        var opcode = (Opcode)bus.Read(Registers.PC);
 
         if (opcode is Opcode.PREFIX)
         {
@@ -60,11 +60,11 @@ public sealed partial class Cpu(Mmu mmu, ILogger<Cpu> logger)
             case 0:
                 break;
             case 1:
-                instruction.N8 = mmu.Read(Registers.PC);
+                instruction.N8 = bus.Read(Registers.PC);
                 Registers.PC++;
                 break;
             case 2:
-                instruction.N16 = mmu.ReadWord(Registers.PC);
+                instruction.N16 = bus.ReadWord(Registers.PC);
                 Registers.PC++;
                 Registers.PC++;
                 break;
