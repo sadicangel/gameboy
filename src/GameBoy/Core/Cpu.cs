@@ -16,6 +16,8 @@ public sealed partial class Cpu(Bus bus, ILogger<Cpu> logger)
 
     public ulong Cycles { get; private set; }
 
+    public event Action<string>? Output { add => bus.Output += value; remove => bus.Output -= value; }
+
     public bool Step()
     {
         //if (!_halted)

@@ -1,1 +1,1 @@
-﻿await Emulator.RunAsync(@"C:\Users\sadic\Downloads\Super Mario Land (World).gb");
+﻿await Emulator.RunAsync(@"D:\Development\gb-test-roms\cpu_instrs\individual\02-interrupts.gb");

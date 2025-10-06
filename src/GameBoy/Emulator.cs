@@ -9,6 +9,8 @@ public sealed class Emulator(Cpu cpu, ILogger<Emulator> logger)
 
     private void Run()
     {
+        cpu.Output += line => logger.LogWarning("{line}", line);
+
         try
         {
             while (_isRunning)
