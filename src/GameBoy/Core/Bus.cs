@@ -41,8 +41,10 @@ public sealed class Bus(Cartridge cartridge)
     public byte TMA { get => _hreg.Read(0xFF06); set => _hreg.Write(0xFF06, value); }
     public byte TAC { get => _hreg.Read(0xFF07); set => _hreg.Write(0xFF07, value); }
 
-    public Interrupts IF { get => (Interrupts)(_hreg.Read(0xFF0F) | 0xE0); set => _hreg.Write(0xFF0F, (byte)((byte)value & 0x1F)); }
+    public Interrupts IF { get => (Interrupts)(_hreg.Read(0xFF0F)) & Interrupts.All; set => _hreg.Write(0xFF0F, (byte)(value & Interrupts.All)); }
     public Interrupts IE { get; set; }
+    public Interrupts PendingInterrupts => (IE & IF & Interrupts.All);
+    public bool HasPendingInterrupts => PendingInterrupts != Interrupts.None;
 
     // 0x0000 - 0x3FFF : ROM Bank 0
     // 0x4000 - 0x7FFF : ROM Bank 1 - Switchable
@@ -67,7 +69,7 @@ public sealed class Bus(Cartridge cartridge)
         < 0xFE00 => _wram.Read((ushort)(address - 0x1E00)),
         < 0xFEA0 => _oram.Read(address),
         < 0xFF00 => 0xFF,
-        < 0xFF80 => _hreg.Read(address),
+        < 0xFF80 => ReadHReg(address),
         < 0xFFFF => _hram.Read(address),
         _ => (byte)IE,
     };
@@ -126,6 +128,13 @@ public sealed class Bus(Cartridge cartridge)
         BinaryPrimitives.WriteUInt16LittleEndian(buffer, value);
         Write(address, buffer[0]);
         Write((ushort)(address + 1), buffer[1]);
+    }
+
+    private byte ReadHReg(ushort address)
+    {
+        var value = _hreg.Read(address);
+        if (address is 0xFF0F) value |= 0xE0;
+        return value;
     }
 
     private void WriteHReg(ushort address, byte value)
@@ -208,15 +217,4 @@ public sealed class Bus(Cartridge cartridge)
         public readonly byte Read(ushort address) => this[address - Offset];
         public void Write(ushort address, byte value) => this[address - Offset] = value;
     }
-}
-
-[Flags]
-public enum Interrupts : byte
-{
-    None = 0,
-    VBlank = 1 << 0,
-    LCD = 1 << 1,
-    Timer = 1 << 2,
-    Serial = 1 << 3,
-    Joypad = 1 << 4,
 }

@@ -930,8 +930,16 @@ partial class Cpu
 
     public byte HALT(Instruction instruction)
     {
-        throw new NotImplementedException(instruction.Opcode.Description);
-        // return 4;
+        if (_ime || !bus.HasPendingInterrupts)
+        {
+            _halted = true;
+        }
+        else
+        {
+            _haltBug = true;
+        }
+
+        return 4;
     }
 
     public byte LD_ptr_HL_A(Instruction instruction)
@@ -1440,10 +1448,9 @@ partial class Cpu
 
     public byte RETI(Instruction instruction)
     {
-        throw new NotImplementedException(instruction.ToString());
-        // RET(flag: true);
-        // Registers.IME = true;
-        // return 16;
+        RET(flag: true);
+        _ime = true;
+        return 16;
     }
 
     public byte JP_C_a16(Instruction instruction)
@@ -1588,9 +1595,8 @@ partial class Cpu
 
     public byte DI(Instruction instruction)
     {
-        throw new NotImplementedException(instruction.ToString());
-        // IME = false;
-        // return 4;
+        _ime = false;
+        return 4;
     }
 
     public byte ILLEGAL_F4(Instruction instruction)
@@ -1639,9 +1645,8 @@ partial class Cpu
 
     public byte EI(Instruction instruction)
     {
-        throw new NotImplementedException(instruction.ToString());
-        // IMEEnabler = true;
-        // return 4;
+        _imeLatch = true;
+        return 4;
     }
 
     public byte ILLEGAL_FC(Instruction instruction)

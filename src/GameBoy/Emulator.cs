@@ -5,6 +5,7 @@ public sealed class Emulator(Cpu cpu, ILogger<Emulator> logger)
 {
     private bool _isRunning = true;
     private bool _isPaused = false;
+    private ulong _cycles;
     private ulong _ticks;
 
     private void Run()
@@ -21,10 +22,7 @@ public sealed class Emulator(Cpu cpu, ILogger<Emulator> logger)
                     continue;
                 }
 
-                if (!cpu.Step())
-                {
-                    throw new InvalidOperationException("CPU stopped");
-                }
+                _cycles += cpu.Step();
 
                 ++_ticks;
             }
