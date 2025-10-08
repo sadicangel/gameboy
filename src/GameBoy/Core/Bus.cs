@@ -7,11 +7,11 @@ namespace GameBoy.Core;
 [Singleton]
 public sealed class Bus(Cartridge cartridge)
 {
-    private readonly VRam _vram;
-    private readonly WRam _wram;
-    private readonly ORam _oram;
-    private readonly HReg _hreg;
-    private readonly HRam _hram;
+    private VRam _vram;
+    private WRam _wram;
+    private ORam _oram;
+    private HReg _hreg;
+    private HRam _hram;
 
     private readonly StringBuilder _outputBuilder = new();
     public event Action<string>? Output;
@@ -41,7 +41,7 @@ public sealed class Bus(Cartridge cartridge)
     public byte TMA { get => _hreg.Read(0xFF06); set => _hreg.Write(0xFF06, value); }
     public byte TAC { get => _hreg.Read(0xFF07); set => _hreg.Write(0xFF07, value); }
 
-    public Interrupts IF { get => (Interrupts)(_hreg.Read(0xFF0F)) & Interrupts.All; set => _hreg.Write(0xFF0F, (byte)(value & Interrupts.All)); }
+    public Interrupts IF { get => (Interrupts)_hreg.Read(0xFF0F) & Interrupts.All; set => _hreg.Write(0xFF0F, (byte)(value & Interrupts.All)); }
     public Interrupts IE { get; set; }
     public Interrupts PendingInterrupts => (IE & IF & Interrupts.All);
     public bool HasPendingInterrupts => PendingInterrupts != Interrupts.None;
