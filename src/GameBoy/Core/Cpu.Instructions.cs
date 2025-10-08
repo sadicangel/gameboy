@@ -5,96 +5,85 @@ namespace GameBoy.Core;
 [SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "function pointer interface")]
 partial class Cpu
 {
-    private byte INC(ref byte register)
+    private byte INC(ref byte r)
     {
-        register++;
-        Registers.Flags.SetZ(register);
-        Registers.Flags.N = false;
-        Registers.Flags.SetH(register, 1);
-
-        return 4;
-    }
-
-    private byte DEC(ref byte register)
-    {
-        register--;
-        Registers.Flags.SetZ(register);
-        Registers.Flags.N = true;
-        Registers.Flags.SetHSub(register, 1);
-
-        return 4;
-    }
-
-    private byte DAD(ushort value)
-    {
-        var result = Registers.HL + value;
-        Registers.Flags.N = false;
-        Registers.Flags.SetH(Registers.HL, value);
-        Registers.Flags.C = result >> 16 != 0;
-        Registers.HL = (ushort)result;
-
-        return 8;
-    }
-
-    private byte ADD(byte value)
-    {
-        var result = Registers.A + value;
+        var result = r + 1;
         Registers.Flags.SetZ(result);
         Registers.Flags.N = false;
-        Registers.Flags.SetH(Registers.A, value);
+        Registers.Flags.SetH(r, 1);
+
+        r = (byte)result;
+        return 4;
+    }
+
+    private byte DEC(ref byte r)
+    {
+        var result = r - 1;
+        Registers.Flags.SetZ(result);
+        Registers.Flags.N = true;
+        Registers.Flags.SetHSub(r, 1);
+
+        r = (byte)result;
+        return 4;
+    }
+
+    private byte ADD(byte b)
+    {
+        var result = Registers.A + b;
+        Registers.Flags.SetZ(result);
+        Registers.Flags.N = false;
+        Registers.Flags.SetH(Registers.A, b);
         Registers.Flags.SetC(result);
         Registers.A = (byte)result;
 
         return 4;
     }
 
-    private byte ADC(byte value)
+    private byte ADC(byte b)
     {
         var carry = Registers.Flags.C ? 1 : 0;
-        var result = Registers.A + value + carry;
+        var result = Registers.A + b + carry;
         Registers.Flags.SetZ(result);
         Registers.Flags.N = false;
         if (Registers.Flags.C)
-            Registers.Flags.SetHCarry(Registers.A, value);
-        else
-            Registers.Flags.SetH(Registers.A, value);
+            Registers.Flags.SetHCarry(Registers.A, b);
+        else Registers.Flags.SetH(Registers.A, b);
         Registers.Flags.SetC(result);
         Registers.A = (byte)result;
 
         return 4;
     }
 
-    private byte SUB(byte value)
+    private byte SUB(byte b)
     {
-        var result = Registers.A - value;
+        var result = Registers.A - b;
         Registers.Flags.SetZ(result);
         Registers.Flags.N = true;
-        Registers.Flags.SetHSub(Registers.A, value);
+        Registers.Flags.SetHSub(Registers.A, b);
         Registers.Flags.SetC(result);
         Registers.A = (byte)result;
 
         return 4;
     }
 
-    private byte SBC(byte value)
+    private byte SBC(byte b)
     {
         var carry = Registers.Flags.C ? 1 : 0;
-        var result = Registers.A - value - carry;
+        var result = Registers.A - b - carry;
         Registers.Flags.SetZ(result);
         Registers.Flags.N = true;
         if (Registers.Flags.C)
-            Registers.Flags.SetHSubCarry(Registers.A, value);
-        else
-            Registers.Flags.SetHSub(Registers.A, value);
+            Registers.Flags.SetHSubCarry(Registers.A, b);
+        else Registers.Flags.SetHSub(Registers.A, b);
         Registers.Flags.SetC(result);
         Registers.A = (byte)result;
 
         return 4;
     }
 
-    private byte AND(byte value)
+    private byte AND(byte b)
     {
-        var result = (byte)(Registers.A & value);
+        var result = (byte)(Registers.A & b);
         Registers.Flags.SetZ(result);
         Registers.Flags.N = false;
         Registers.Flags.H = true;
@@ -104,9 +93,9 @@ partial class Cpu
         return 4;
     }
 
-    private byte XOR(byte value)
+    private byte XOR(byte b)
     {
-        var result = (byte)(Registers.A ^ value);
+        var result = (byte)(Registers.A ^ b);
         Registers.Flags.SetZ(result);
         Registers.Flags.N = false;
         Registers.Flags.H = false;
@@ -116,9 +105,9 @@ partial class Cpu
         return 4;
     }
 
-    private byte OR(byte value)
+    private byte OR(byte b)
     {
-        var result = (byte)(Registers.A | value);
+        var result = (byte)(Registers.A | b);
         Registers.Flags.SetZ(result);
         Registers.Flags.N = false;
         Registers.Flags.H = false;
@@ -128,16 +117,28 @@ partial class Cpu
         return 4;
     }
 
-    private byte CP(byte value)
+    private byte CP(byte b)
     {
-        var result = Registers.A - value;
+        var result = Registers.A - b;
         Registers.Flags.SetZ(result);
         Registers.Flags.N = true;
-        Registers.Flags.SetHSub(Registers.A, value);
+        Registers.Flags.SetHSub(Registers.A, b);
         Registers.Flags.SetC(result);
 
         return 4;
     }
+
+    private byte DAD(ushort w)
+    {
+        var result = Registers.HL + w;
+        Registers.Flags.N = false;
+        Registers.Flags.SetH(Registers.HL, w);
+        Registers.Flags.C = result >> 16 != 0;
+        Registers.HL = (ushort)result;
+
+        return 8;
+    }
+
 
     private byte JR(sbyte address, bool flag)
     {
@@ -258,7 +259,7 @@ partial class Cpu
 
     public byte LD_ptr_a16_SP(Instruction instruction)
     {
-        bus.WriteWord(Registers.SP, instruction.N16);
+        bus.WriteWord(instruction.N16, Registers.SP);
         return 20;
     }
 
@@ -376,6 +377,7 @@ partial class Cpu
 
     public byte INC_E(Instruction instruction)
     {
+        if (Registers.E is 255) Console.WriteLine();
         return INC(ref Registers.E);
     }
 
@@ -443,16 +445,25 @@ partial class Cpu
         if (Registers.Flags.N)
         {
             if (Registers.Flags.C)
+            {
                 Registers.A -= 0x60;
+            }
             if (Registers.Flags.H)
+            {
                 Registers.A -= 0x6;
+            }
         }
         else
         {
             if (Registers.Flags.C || (Registers.A > 0x99))
-                Registers.A += 0x60; Registers.Flags.C = true;
+            {
+                Registers.A += 0x60;
+                Registers.Flags.C = true;
+            }
             if (Registers.Flags.H || (Registers.A & 0xF) > 0x9)
+            {
                 Registers.A += 0x6;
+            }
         }
         Registers.Flags.SetZ(Registers.A);
         Registers.Flags.H = false;
@@ -1375,8 +1386,7 @@ partial class Cpu
 
     public byte PREFIX(Instruction instruction)
     {
-        throw new NotImplementedException($"Instruction '{instruction.Opcode.Description}' not implemented");
-        // return 4;
+        return instruction.OpcodeCb.Exec(this);
     }
 
     public byte CALL_Z_a16(Instruction instruction)
@@ -1546,7 +1556,7 @@ partial class Cpu
 
     public byte LD_ptr_a16_A(Instruction instruction)
     {
-        bus.WriteWord(instruction.N16, Registers.A);
+        bus.Write(instruction.N16, Registers.A);
         return 16;
     }
 
@@ -1583,7 +1593,7 @@ partial class Cpu
 
     public byte POP_AF(Instruction instruction)
     {
-        Registers.AF = POP();
+        Registers.AF = (ushort)(POP() & 0xFFF0);
         return 12;
     }
 

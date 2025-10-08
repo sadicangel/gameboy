@@ -6,9 +6,9 @@ public enum Opcode : byte
 {
     [Description("NOP")]
     NOP = 0x00,
-    [Description("LD BC, n16")]
+    [Description("LD BC, d16")]
     LD_BC_d16 = 0x01,
-    [Description("LD BC, A")]
+    [Description("LD (BC), A")]
     LD_ptr_BC_A = 0x02,
     [Description("INC BC")]
     INC_BC = 0x03,
@@ -16,15 +16,15 @@ public enum Opcode : byte
     INC_B = 0x04,
     [Description("DEC B")]
     DEC_B = 0x05,
-    [Description("LD B, n8")]
+    [Description("LD B, d8")]
     LD_B_d8 = 0x06,
     [Description("RLCA")]
     RLCA = 0x07,
-    [Description("LD a16, SP")]
+    [Description("LD (a16), SP")]
     LD_ptr_a16_SP = 0x08,
     [Description("ADD HL, BC")]
     ADD_HL_BC = 0x09,
-    [Description("LD A, BC")]
+    [Description("LD A, (BC)")]
     LD_A_ptr_BC = 0x0A,
     [Description("DEC BC")]
     DEC_BC = 0x0B,
@@ -32,15 +32,15 @@ public enum Opcode : byte
     INC_C = 0x0C,
     [Description("DEC C")]
     DEC_C = 0x0D,
-    [Description("LD C, n8")]
+    [Description("LD C, d8")]
     LD_C_d8 = 0x0E,
     [Description("RRCA")]
     RRCA = 0x0F,
-    [Description("STOP n8")]
+    [Description("STOP 0")]
     STOP_d8 = 0x10,
-    [Description("LD DE, n16")]
+    [Description("LD DE, d16")]
     LD_DE_d16 = 0x11,
-    [Description("LD DE, A")]
+    [Description("LD (DE), A")]
     LD_ptr_DE_A = 0x12,
     [Description("INC DE")]
     INC_DE = 0x13,
@@ -48,7 +48,7 @@ public enum Opcode : byte
     INC_D = 0x14,
     [Description("DEC D")]
     DEC_D = 0x15,
-    [Description("LD D, n8")]
+    [Description("LD D, d8")]
     LD_D_d8 = 0x16,
     [Description("RLA")]
     RLA = 0x17,
@@ -56,7 +56,7 @@ public enum Opcode : byte
     JR_e8 = 0x18,
     [Description("ADD HL, DE")]
     ADD_HL_DE = 0x19,
-    [Description("LD A, DE")]
+    [Description("LD A, (DE)")]
     LD_A_ptr_DE = 0x1A,
     [Description("DEC DE")]
     DEC_DE = 0x1B,
@@ -64,15 +64,15 @@ public enum Opcode : byte
     INC_E = 0x1C,
     [Description("DEC E")]
     DEC_E = 0x1D,
-    [Description("LD E, n8")]
+    [Description("LD E, d8")]
     LD_E_d8 = 0x1E,
     [Description("RRA")]
     RRA = 0x1F,
     [Description("JR NZ, e8")]
     JR_NZ_e8 = 0x20,
-    [Description("LD HL, n16")]
+    [Description("LD HL, d16")]
     LD_HL_d16 = 0x21,
-    [Description("LD HL, A")]
+    [Description("LD (HL+), A")]
     LD_HLI_A = 0x22,
     [Description("INC HL")]
     INC_HL = 0x23,
@@ -80,7 +80,7 @@ public enum Opcode : byte
     INC_H = 0x24,
     [Description("DEC H")]
     DEC_H = 0x25,
-    [Description("LD H, n8")]
+    [Description("LD H, d8")]
     LD_H_d8 = 0x26,
     [Description("DAA")]
     DAA = 0x27,
@@ -88,7 +88,7 @@ public enum Opcode : byte
     JR_Z_e8 = 0x28,
     [Description("ADD HL, HL")]
     ADD_HL_HL = 0x29,
-    [Description("LD A, HL")]
+    [Description("LD A, (HL+)")]
     LD_A_HLI = 0x2A,
     [Description("DEC HL")]
     DEC_HL = 0x2B,
@@ -96,23 +96,23 @@ public enum Opcode : byte
     INC_L = 0x2C,
     [Description("DEC L")]
     DEC_L = 0x2D,
-    [Description("LD L, n8")]
+    [Description("LD L, d8")]
     LD_L_d8 = 0x2E,
     [Description("CPL")]
     CPL = 0x2F,
     [Description("JR NC, e8")]
     JR_NC_e8 = 0x30,
-    [Description("LD SP, n16")]
+    [Description("LD SP, d16")]
     LD_SP_d16 = 0x31,
-    [Description("LD HL, A")]
+    [Description("LD (HL-), A")]
     LD_HLD_A = 0x32,
     [Description("INC SP")]
     INC_SP = 0x33,
-    [Description("INC HL")]
+    [Description("INC (HL)")]
     INC_ptr_HL = 0x34,
-    [Description("DEC HL")]
+    [Description("DEC (HL)")]
     DEC_ptr_HL = 0x35,
-    [Description("LD HL, n8")]
+    [Description("LD (HL), d8")]
     LD_ptr_HL_d8 = 0x36,
     [Description("SCF")]
     SCF = 0x37,
@@ -120,7 +120,7 @@ public enum Opcode : byte
     JR_C_e8 = 0x38,
     [Description("ADD HL, SP")]
     ADD_HL_SP = 0x39,
-    [Description("LD A, HL")]
+    [Description("LD A, (HL-)")]
     LD_A_HLD = 0x3A,
     [Description("DEC SP")]
     DEC_SP = 0x3B,
@@ -128,7 +128,7 @@ public enum Opcode : byte
     INC_A = 0x3C,
     [Description("DEC A")]
     DEC_A = 0x3D,
-    [Description("LD A, n8")]
+    [Description("LD A, d8")]
     LD_A_d8 = 0x3E,
     [Description("CCF")]
     CCF = 0x3F,
@@ -144,7 +144,7 @@ public enum Opcode : byte
     LD_B_H = 0x44,
     [Description("LD B, L")]
     LD_B_L = 0x45,
-    [Description("LD B, HL")]
+    [Description("LD B, (HL)")]
     LD_B_ptr_HL = 0x46,
     [Description("LD B, A")]
     LD_B_A = 0x47,
@@ -160,7 +160,7 @@ public enum Opcode : byte
     LD_C_H = 0x4C,
     [Description("LD C, L")]
     LD_C_L = 0x4D,
-    [Description("LD C, HL")]
+    [Description("LD C, (HL)")]
     LD_C_ptr_HL = 0x4E,
     [Description("LD C, A")]
     LD_C_A = 0x4F,
@@ -176,7 +176,7 @@ public enum Opcode : byte
     LD_D_H = 0x54,
     [Description("LD D, L")]
     LD_D_L = 0x55,
-    [Description("LD D, HL")]
+    [Description("LD D, (HL)")]
     LD_D_ptr_HL = 0x56,
     [Description("LD D, A")]
     LD_D_A = 0x57,
@@ -192,7 +192,7 @@ public enum Opcode : byte
     LD_E_H = 0x5C,
     [Description("LD E, L")]
     LD_E_L = 0x5D,
-    [Description("LD E, HL")]
+    [Description("LD E, (HL)")]
     LD_E_ptr_HL = 0x5E,
     [Description("LD E, A")]
     LD_E_A = 0x5F,
@@ -208,7 +208,7 @@ public enum Opcode : byte
     LD_H_H = 0x64,
     [Description("LD H, L")]
     LD_H_L = 0x65,
-    [Description("LD H, HL")]
+    [Description("LD H, (HL)")]
     LD_H_ptr_HL = 0x66,
     [Description("LD H, A")]
     LD_H_A = 0x67,
@@ -224,25 +224,25 @@ public enum Opcode : byte
     LD_L_H = 0x6C,
     [Description("LD L, L")]
     LD_L_L = 0x6D,
-    [Description("LD L, HL")]
+    [Description("LD L, (HL)")]
     LD_L_ptr_HL = 0x6E,
     [Description("LD L, A")]
     LD_L_A = 0x6F,
-    [Description("LD HL, B")]
+    [Description("LD (HL), B")]
     LD_ptr_HL_B = 0x70,
-    [Description("LD HL, C")]
+    [Description("LD (HL), C")]
     LD_ptr_HL_C = 0x71,
-    [Description("LD HL, D")]
+    [Description("LD (HL), D")]
     LD_ptr_HL_D = 0x72,
-    [Description("LD HL, E")]
+    [Description("LD (HL), E")]
     LD_ptr_HL_E = 0x73,
-    [Description("LD HL, H")]
+    [Description("LD (HL), H")]
     LD_ptr_HL_H = 0x74,
-    [Description("LD HL, L")]
+    [Description("LD (HL), L")]
     LD_ptr_HL_L = 0x75,
     [Description("HALT")]
     HALT = 0x76,
-    [Description("LD HL, A")]
+    [Description("LD (HL), A")]
     LD_ptr_HL_A = 0x77,
     [Description("LD A, B")]
     LD_A_B = 0x78,
@@ -256,7 +256,7 @@ public enum Opcode : byte
     LD_A_H = 0x7C,
     [Description("LD A, L")]
     LD_A_L = 0x7D,
-    [Description("LD A, HL")]
+    [Description("LD A, (HL)")]
     LD_A_ptr_HL = 0x7E,
     [Description("LD A, A")]
     LD_A_A = 0x7F,
@@ -272,7 +272,7 @@ public enum Opcode : byte
     ADD_A_H = 0x84,
     [Description("ADD A, L")]
     ADD_A_L = 0x85,
-    [Description("ADD A, HL")]
+    [Description("ADD A, (HL)")]
     ADD_A_ptr_HL = 0x86,
     [Description("ADD A, A")]
     ADD_A_A = 0x87,
@@ -288,7 +288,7 @@ public enum Opcode : byte
     ADC_A_H = 0x8C,
     [Description("ADC A, L")]
     ADC_A_L = 0x8D,
-    [Description("ADC A, HL")]
+    [Description("ADC A, (HL)")]
     ADC_A_ptr_HL = 0x8E,
     [Description("ADC A, A")]
     ADC_A_A = 0x8F,
@@ -304,7 +304,7 @@ public enum Opcode : byte
     SUB_A_H = 0x94,
     [Description("SUB A, L")]
     SUB_A_L = 0x95,
-    [Description("SUB A, HL")]
+    [Description("SUB A, (HL)")]
     SUB_A_ptr_HL = 0x96,
     [Description("SUB A, A")]
     SUB_A_A = 0x97,
@@ -320,7 +320,7 @@ public enum Opcode : byte
     SBC_A_H = 0x9C,
     [Description("SBC A, L")]
     SBC_A_L = 0x9D,
-    [Description("SBC A, HL")]
+    [Description("SBC A, (HL)")]
     SBC_A_ptr_HL = 0x9E,
     [Description("SBC A, A")]
     SBC_A_A = 0x9F,
@@ -336,7 +336,7 @@ public enum Opcode : byte
     AND_A_H = 0xA4,
     [Description("AND A, L")]
     AND_A_L = 0xA5,
-    [Description("AND A, HL")]
+    [Description("AND A, (HL)")]
     AND_A_ptr_HL = 0xA6,
     [Description("AND A, A")]
     AND_A_A = 0xA7,
@@ -352,7 +352,7 @@ public enum Opcode : byte
     XOR_A_H = 0xAC,
     [Description("XOR A, L")]
     XOR_A_L = 0xAD,
-    [Description("XOR A, HL")]
+    [Description("XOR A, (HL)")]
     XOR_A_ptr_HL = 0xAE,
     [Description("XOR A, A")]
     XOR_A_A = 0xAF,
@@ -368,7 +368,7 @@ public enum Opcode : byte
     OR_A_H = 0xB4,
     [Description("OR A, L")]
     OR_A_L = 0xB5,
-    [Description("OR A, HL")]
+    [Description("OR A, (HL)")]
     OR_A_ptr_HL = 0xB6,
     [Description("OR A, A")]
     OR_A_A = 0xB7,
@@ -384,7 +384,7 @@ public enum Opcode : byte
     CP_A_H = 0xBC,
     [Description("CP A, L")]
     CP_A_L = 0xBD,
-    [Description("CP A, HL")]
+    [Description("CP A, (HL)")]
     CP_A_ptr_HL = 0xBE,
     [Description("CP A, A")]
     CP_A_A = 0xBF,
@@ -400,7 +400,7 @@ public enum Opcode : byte
     CALL_NZ_a16 = 0xC4,
     [Description("PUSH BC")]
     PUSH_BC = 0xC5,
-    [Description("ADD A, n8")]
+    [Description("ADD A, d8")]
     ADD_A_d8 = 0xC6,
     [Description("RST $00")]
     RST_00 = 0xC7,
@@ -416,7 +416,7 @@ public enum Opcode : byte
     CALL_Z_a16 = 0xCC,
     [Description("CALL a16")]
     CALL_a16 = 0xCD,
-    [Description("ADC A, n8")]
+    [Description("ADC A, d8")]
     ADC_A_d8 = 0xCE,
     [Description("RST $08")]
     RST_08 = 0xCF,
@@ -432,7 +432,7 @@ public enum Opcode : byte
     CALL_NC_a16 = 0xD4,
     [Description("PUSH DE")]
     PUSH_DE = 0xD5,
-    [Description("SUB A, n8")]
+    [Description("SUB A, d8")]
     SUB_A_d8 = 0xD6,
     [Description("RST $10")]
     RST_10 = 0xD7,
@@ -448,15 +448,15 @@ public enum Opcode : byte
     CALL_C_a16 = 0xDC,
     [Description("ILLEGAL_DD")]
     ILLEGAL_DD = 0xDD,
-    [Description("SBC A, n8")]
+    [Description("SBC A, d8")]
     SBC_A_d8 = 0xDE,
     [Description("RST $18")]
     RST_18 = 0xDF,
-    [Description("LDH a8, A")]
+    [Description("LDH (a8), A")]
     LDH_ptr_a8_A = 0xE0,
     [Description("POP HL")]
     POP_HL = 0xE1,
-    [Description("LDH C, A")]
+    [Description("LD (C), A")]
     LDH_ptr_C_A = 0xE2,
     [Description("ILLEGAL_E3")]
     ILLEGAL_E3 = 0xE3,
@@ -464,15 +464,15 @@ public enum Opcode : byte
     ILLEGAL_E4 = 0xE4,
     [Description("PUSH HL")]
     PUSH_HL = 0xE5,
-    [Description("AND A, n8")]
+    [Description("AND A, d8")]
     AND_A_d8 = 0xE6,
     [Description("RST $20")]
     RST_20 = 0xE7,
     [Description("ADD SP, e8")]
     ADD_SP_e8 = 0xE8,
-    [Description("JP HL")]
+    [Description("JP (HL)")]
     JP_HL = 0xE9,
-    [Description("LD a16, A")]
+    [Description("LD (a16), A")]
     LD_ptr_a16_A = 0xEA,
     [Description("ILLEGAL_EB")]
     ILLEGAL_EB = 0xEB,
@@ -480,15 +480,15 @@ public enum Opcode : byte
     ILLEGAL_EC = 0xEC,
     [Description("ILLEGAL_ED")]
     ILLEGAL_ED = 0xED,
-    [Description("XOR A, n8")]
+    [Description("XOR A, d8")]
     XOR_A_d8 = 0xEE,
     [Description("RST $28")]
     RST_28 = 0xEF,
-    [Description("LDH A, a8")]
+    [Description("LDH A, (a8)")]
     LDH_A_ptr_a8 = 0xF0,
     [Description("POP AF")]
     POP_AF = 0xF1,
-    [Description("LDH A, C")]
+    [Description("LD A, (C)")]
     LDH_A_ptr_C = 0xF2,
     [Description("DI")]
     DI = 0xF3,
@@ -496,15 +496,15 @@ public enum Opcode : byte
     ILLEGAL_F4 = 0xF4,
     [Description("PUSH AF")]
     PUSH_AF = 0xF5,
-    [Description("OR A, n8")]
+    [Description("OR A, d8")]
     OR_A_d8 = 0xF6,
     [Description("RST $30")]
     RST_30 = 0xF7,
-    [Description("LD HL, SP, e8")]
+    [Description("LD HL, SP+e8")]
     LD_HL_SP_e8 = 0xF8,
     [Description("LD SP, HL")]
     LD_SP_HL = 0xF9,
-    [Description("LD A, a16")]
+    [Description("LD A, (a16)")]
     LD_A_ptr_a16 = 0xFA,
     [Description("EI")]
     EI = 0xFB,
@@ -512,8 +512,9 @@ public enum Opcode : byte
     ILLEGAL_FC = 0xFC,
     [Description("ILLEGAL_FD")]
     ILLEGAL_FD = 0xFD,
-    [Description("CP A, n8")]
+    [Description("CP A, d8")]
     CP_A_d8 = 0xFE,
     [Description("RST $38")]
     RST_38 = 0xFF,
 }
+

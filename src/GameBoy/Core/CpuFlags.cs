@@ -18,7 +18,7 @@ public record struct CpuFlags
 
     public void SetH(ushort w1, ushort w2) => H = ((w1 & 0xFFF) + (w2 & 0xFFF)) > 0xFFF;
 
-    public void SetHCarry(byte b1, byte b2) => H = ((b1 & 0xF) + (b2 & 0xF)) >= 0xF;
+    public void SetHCarry(byte b1, byte b2) => H = ((b1 & 0xF) + (b2 & 0xF) + (C ? 1 : 0)) > 0xF;
 
     public void SetHSub(byte b1, byte b2) => H = (b1 & 0xF) < (b2 & 0xF);
 

@@ -41,6 +41,7 @@ public sealed partial class Cpu(Bus bus, ILogger<Cpu> logger)
 
         var pc = Registers.PC;
         var instruction = FetchInstruction();
+
         if (logger.IsEnabled(LogLevel.Information))
         {
             logger.LogInformation("""
@@ -79,11 +80,6 @@ public sealed partial class Cpu(Bus bus, ILogger<Cpu> logger)
             _haltBug = false;
         else
             Registers.PC++;
-
-        if (opcode is Opcode.PREFIX)
-        {
-            throw new NotImplementedException($"Instruction '{opcode.Description}' not implemented");
-        }
 
         var instruction = new Instruction(opcode);
 
