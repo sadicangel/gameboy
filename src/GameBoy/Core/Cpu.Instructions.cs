@@ -305,7 +305,7 @@ partial class Cpu
 
     public byte STOP_d8(Instruction instruction)
     {
-        throw new NotImplementedException(instruction.Opcode.Description);
+        throw new NotImplementedException($"Instruction '{instruction.Opcode.Description}' not implemented");
         // return 4;
     }
 
@@ -1375,7 +1375,7 @@ partial class Cpu
 
     public byte PREFIX(Instruction instruction)
     {
-        throw new NotImplementedException(instruction.Opcode.Description);
+        throw new NotImplementedException($"Instruction '{instruction.Opcode.Description}' not implemented");
         // return 4;
     }
 

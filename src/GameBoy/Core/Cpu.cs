@@ -75,15 +75,15 @@ public sealed partial class Cpu(Bus bus, ILogger<Cpu> logger)
     {
         var opcode = (Opcode)bus.Read(Registers.PC);
 
-        if (opcode is Opcode.PREFIX)
-        {
-            throw new NotImplementedException(opcode.Description);
-        }
-
         if (_haltBug)
             _haltBug = false;
         else
             Registers.PC++;
+
+        if (opcode is Opcode.PREFIX)
+        {
+            throw new NotImplementedException($"Instruction '{opcode.Description}' not implemented");
+        }
 
         var instruction = new Instruction(opcode);
 
