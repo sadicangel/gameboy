@@ -377,7 +377,6 @@ partial class Cpu
 
     public byte INC_E(Instruction instruction)
     {
-        if (Registers.E is 255) Console.WriteLine();
         return INC(ref Registers.E);
     }
 
@@ -941,7 +940,7 @@ partial class Cpu
 
     public byte HALT(Instruction instruction)
     {
-        if (_ime || !bus.HasPendingInterrupts)
+        if (_ime || !interrupts.HasPending)
         {
             _halted = true;
         }
