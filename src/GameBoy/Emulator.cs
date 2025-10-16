@@ -51,7 +51,7 @@ public sealed class Emulator(Cpu cpu, Serial serial, Timer timer, ILogger<Emulat
             new LoggerConfiguration()
             .Enrich.FromLogContext()
             .WriteTo.Console()
-            .WriteTo.File("log.txt", rollingInterval: RollingInterval.Hour)
+            //.WriteTo.File("log.txt", rollingInterval: RollingInterval.Hour)
             .CreateLogger());
 
         builder.Services.Scan(scan => scan
