@@ -15,7 +15,7 @@ public sealed class Emulator(Cpu cpu, Serial serial, Timer timer, ILogger<Emulat
         serial.LineReceived += line =>
         {
             logger.LogInformation("{line}", line);
-            if (line.StartsWith("Passed"))
+            if (line.StartsWith("Passed") || line.StartsWith("Failed"))
                 _isRunning = false;
         };
 
