@@ -75,6 +75,9 @@ public sealed class Cartridge
     public void Write(ushort address, byte value)
     {
         _logger.LogDebug("'{Address:X4}' <- '{Value:X2}'", address, value);
+#if DEBUG
+        _data[address] = value;
+#endif
     }
 }
 

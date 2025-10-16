@@ -2,7 +2,7 @@
 
 namespace GameBoy.Core;
 
-public static class BitOperations
+public static class BitOperations1
 {
     public static bool HasBitSet<T>(this T value, int bit) where T : struct, IBinaryInteger<T>, IShiftOperators<T, int, T> =>
         (value & (T.One << bit)) != T.Zero;

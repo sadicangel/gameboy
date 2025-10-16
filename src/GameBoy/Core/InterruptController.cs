@@ -19,9 +19,6 @@ public sealed class InterruptController
             return false;
         }
 
-        if (highestPriority != Interrupts.Timer)
-            Console.WriteLine();
-
         _if &= ~highestPriority;
         return true;
     }

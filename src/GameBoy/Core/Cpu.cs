@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Numerics;
 
 namespace GameBoy.Core;
 
@@ -20,8 +21,6 @@ public sealed partial class Cpu(Bus bus, InterruptController interrupts, ILogger
     private bool _halted;
     private bool _haltBug;
 
-    public event Action<string>? Output { add => bus.Output += value; remove => bus.Output -= value; }
-
     public byte Step()
     {
         if (_halted)
@@ -33,15 +32,15 @@ public sealed partial class Cpu(Bus bus, InterruptController interrupts, ILogger
 
             _halted = false;
 
+            if (_ime)
+            {
+                return ServiceInterrupts();
+            }
+
             if (_imeLatch)
             {
                 _ime = true;
                 _imeLatch = false;
-            }
-
-            if (_ime)
-            {
-                return ServiceInterrupts();
             }
         }
 
@@ -58,10 +57,10 @@ public sealed partial class Cpu(Bus bus, InterruptController interrupts, ILogger
         if (logger.IsEnabled(LogLevel.Debug))
         {
             logger.LogDebug("""
-                    PC: 0x{PC:X4}, SP: 0x{SP:X4},
-                    A: 0x{A:X2}, B: 0x{B:X2}, D: 0x{D:X2}, H: 0x{H:X2}
-                    F: 0x{F:X2}, C: 0x{C:X2}, E: 0x{E:X2}, L: 0x{L:X2}
-                    Z:    {Z}, N:    {N}, H:    {H}, C:    {C}
+                    PC: {PC:X4}, SP: {SP:X4},
+                    A: {A:X2}, B: {B:X2}, D: {D:X2}, H: {H:X2}
+                    F: {F:X2}, C: {C:X2}, E: {E:X2}, L: {L:X2}
+                    Z:  {Z}, N:  {N}, H:  {H}, C:  {C}
                     """,
                 Registers.PC, Registers.SP,
                 Registers.A, Registers.B, Registers.D, Registers.H,
@@ -69,15 +68,15 @@ public sealed partial class Cpu(Bus bus, InterruptController interrupts, ILogger
                 Convert.ToByte(Registers.Flags.Z), Convert.ToByte(Registers.Flags.N), Convert.ToByte(Registers.Flags.H), Convert.ToByte(Registers.Flags.C));
         }
 
+        if (_ime)
+        {
+            cycles += ServiceInterrupts();
+        }
+
         if (_imeLatch)
         {
             _ime = true;
             _imeLatch = false;
-        }
-
-        if (_ime)
-        {
-            cycles += ServiceInterrupts();
         }
 
         return cycles;
@@ -124,7 +123,7 @@ public sealed partial class Cpu(Bus bus, InterruptController interrupts, ILogger
         _ime = false;
 
         PUSH(Registers.PC);
-        Registers.PC = (ushort)(0x40 + (byte)highestPriority * 8);
+        Registers.PC = (ushort)(0x40 + BitOperations.TrailingZeroCount((byte)highestPriority) * 8);
 
         return 20;
     }

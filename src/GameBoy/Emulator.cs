@@ -3,7 +3,7 @@
 namespace GameBoy;
 
 [Singleton]
-public sealed class Emulator(Cpu cpu, Timer timer, ILogger<Emulator> logger)
+public sealed class Emulator(Cpu cpu, Serial serial, Timer timer, ILogger<Emulator> logger)
 {
     private bool _isRunning = true;
     private bool _isPaused = false;
@@ -12,21 +12,12 @@ public sealed class Emulator(Cpu cpu, Timer timer, ILogger<Emulator> logger)
 
     private void Run()
     {
-        cpu.Output += line => logger.LogWarning("{line}", line);
-
-        if (logger.IsEnabled(LogLevel.Information))
+        serial.LineReceived += line =>
         {
-            logger.LogInformation("""
-                PC: 0x{PC:X4}, SP: 0x{SP:X4},
-                A: 0x{A:X2}, B: 0x{B:X2}, D: 0x{D:X2}, H: 0x{H:X2}
-                F: 0x{F:X2}, C: 0x{C:X2}, E: 0x{E:X2}, L: 0x{L:X2}
-                Z:    {Z}, N:    {N}, H:    {H}, C:    {C}
-                """,
-            cpu.Registers.PC, cpu.Registers.SP,
-            cpu.Registers.A, cpu.Registers.B, cpu.Registers.D, cpu.Registers.H,
-            cpu.Registers.F, cpu.Registers.C, cpu.Registers.E, cpu.Registers.L,
-            Convert.ToByte(cpu.Registers.Flags.Z), Convert.ToByte(cpu.Registers.Flags.N), Convert.ToByte(cpu.Registers.Flags.H), Convert.ToByte(cpu.Registers.Flags.C));
-        }
+            logger.LogInformation("{line}", line);
+            if (line.StartsWith("Passed"))
+                _isRunning = false;
+        };
 
         try
         {

@@ -1,43 +1,16 @@
 ﻿using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace GameBoy.Core;
 
 [Singleton]
-public sealed class Bus(Cartridge cartridge, InterruptController interrupts, Timer timer)
+public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, InterruptController interrupts)
 {
-    private VRam _vram;
-    private WRam _wram;
-    private ORam _oram;
-    private HReg _hreg;
-    private HRam _hram;
-
-    private readonly StringBuilder _outputBuilder = new();
-    public event Action<string>? Output;
-
-    public byte SB { get => _hreg.Read(0xFF01); set => _hreg.Write(0xFF01, value); }
-    public byte SC
-    {
-        get => _hreg.Read(0xFF02);
-        set
-        {
-            if ((value & 0x81) == 0x81)
-            {
-                value = (byte)(value & ~0x80);
-                interrupts.Request(Interrupts.Serial);
-                _outputBuilder.Append((char)SB);
-                if ((char)SB is '\n' or '\r' or '\0')
-                {
-                    var line = _outputBuilder.ToString().Trim();
-                    if (!string.IsNullOrWhiteSpace(line))
-                        Output?.Invoke(line);
-                    _outputBuilder.Clear();
-                }
-            }
-            _hreg.Write(0xFF02, value);
-        }
-    }
+    private VRam _vram = new();
+    private WRam _wram = new();
+    private ORam _oram = new();
+    private HReg _hreg = new();
+    private HRam _hram = new();
 
     // 0x0000 - 0x3FFF : ROM Bank 0
     // 0x4000 - 0x7FFF : ROM Bank 1 - Switchable
@@ -127,8 +100,8 @@ public sealed class Bus(Cartridge cartridge, InterruptController interrupts, Tim
     {
         return address switch
         {
-            0xFF01 => SB,
-            0xFF02 => SC,
+            0xFF01 => serial.SB,
+            0xFF02 => serial.SC,
             0xFF04 => timer.DIV,
             0xFF05 => timer.TIMA,
             0xFF06 => timer.TMA,
@@ -143,10 +116,10 @@ public sealed class Bus(Cartridge cartridge, InterruptController interrupts, Tim
         switch (address)
         {
             case 0xFF01:
-                SB = value;
+                serial.SB = value;
                 break;
             case 0xFF02:
-                SC = value;
+                serial.SC = value;
                 break;
             case 0xFF04:
                 timer.DIV = 0;
@@ -204,6 +177,30 @@ public sealed class Bus(Cartridge cartridge, InterruptController interrupts, Tim
     {
         private const ushort Offset = 0xFF00;
         public byte E0;
+
+        public HReg()
+        {
+            this[0x10] = 0x80;
+            this[0x11] = 0xBF;
+            this[0x12] = 0xF3;
+            this[0x14] = 0xBF;
+            this[0x16] = 0x3F;
+            this[0x19] = 0xBF;
+            this[0x1A] = 0x7F;
+            this[0x1B] = 0xFF;
+            this[0x1C] = 0x9F;
+            this[0x1E] = 0xBF;
+            this[0x20] = 0xFF;
+            this[0x23] = 0xBF;
+            this[0x24] = 0x77;
+            this[0x25] = 0xF3;
+            this[0x26] = 0xF1;
+            this[0x40] = 0x91;
+            this[0x47] = 0xFC;
+            this[0x48] = 0xFF;
+            this[0x49] = 0xFF;
+            this[0x4D] = 0xFF;
+        }
 
         public readonly byte Read(ushort address) => this[address - Offset];
         public void Write(ushort address, byte value) => this[address - Offset] = value;
