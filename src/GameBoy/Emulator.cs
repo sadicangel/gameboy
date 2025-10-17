@@ -16,7 +16,23 @@ public sealed class Emulator(Cpu cpu, Serial serial, Timer timer, ILogger<Emulat
         {
             logger.LogInformation("{line}", line);
             if (line.StartsWith("Passed") || line.StartsWith("Failed"))
+            {
                 _isRunning = false;
+            }
+            if (line.StartsWith("Failed"))
+            {
+                logger.LogWarning("Last Results:{NewLine}{Results}", Environment.NewLine, string.Join(Environment.NewLine, cpu.ExecutionResults.Select(x => new
+                {
+                    Instruction = $"{x.PC:X4}: {x.Instruction} ({x.Cycles:D2} cycles)",
+                    AF = $"{x.Registers.AF:X4}",
+                    BC = $"{x.Registers.BC:X4}",
+                    DE = $"{x.Registers.DE:X4}",
+                    HL = $"{x.Registers.HL:X4}",
+                    SP = $"{x.Registers.SP:X4}",
+                    PC = $"{x.Registers.PC:X4}",
+                })));
+            }
+
         };
 
         try
@@ -39,7 +55,16 @@ public sealed class Emulator(Cpu cpu, Serial serial, Timer timer, ILogger<Emulat
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "{message}", ex.Message);
+            logger.LogError(ex, "{message}{NewLine}Last Results:{NewLine}{Results}", ex.Message, Environment.NewLine, Environment.NewLine, string.Join(Environment.NewLine, cpu.ExecutionResults.Select(x => new
+            {
+                Instruction = $"{x.PC:X4}: {x.Instruction} ({x.Cycles:D2} cycles)",
+                AF = $"{x.Registers.AF:X4}",
+                BC = $"{x.Registers.BC:X4}",
+                DE = $"{x.Registers.DE:X4}",
+                HL = $"{x.Registers.HL:X4}",
+                SP = $"{x.Registers.SP:X4}",
+                PC = $"{x.Registers.PC:X4}",
+            })));
         }
     }
 

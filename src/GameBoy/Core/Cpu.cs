@@ -1,10 +1,11 @@
-﻿using System.Diagnostics;
+﻿using System.Collections;
+using System.Diagnostics;
 using System.Numerics;
 
 namespace GameBoy.Core;
 
 [Singleton]
-public sealed partial class Cpu(Bus bus, InterruptController interrupts, ILogger<Cpu> logger)
+public sealed partial class Cpu(Bus bus, InterruptController interrupts)
 {
     public CpuRegisters Registers = new()
     {
@@ -20,6 +21,10 @@ public sealed partial class Cpu(Bus bus, InterruptController interrupts, ILogger
     private bool _imeLatch;
     private bool _halted;
     private bool _haltBug;
+
+    private readonly ExecutionResultBuffer _executionResults = new(Capacity: 200);
+
+    public IEnumerable<ExecutionResult> ExecutionResults => _executionResults;
 
     public byte Step()
     {
@@ -47,26 +52,9 @@ public sealed partial class Cpu(Bus bus, InterruptController interrupts, ILogger
         var pc = Registers.PC;
         var instruction = FetchInstruction();
 
-        if (logger.IsEnabled(LogLevel.Debug))
-        {
-            logger.LogDebug("0x{PC:X4}: {Instruction}", pc, instruction);
-        }
-
         var cycles = instruction.Exec(this);
 
-        if (logger.IsEnabled(LogLevel.Debug))
-        {
-            logger.LogDebug("""
-                    PC: {PC:X4}, SP: {SP:X4},
-                    A: {A:X2}, B: {B:X2}, D: {D:X2}, H: {H:X2}
-                    F: {F:X2}, C: {C:X2}, E: {E:X2}, L: {L:X2}
-                    Z:  {Z}, N:  {N}, H:  {H}, C:  {C}
-                    """,
-                Registers.PC, Registers.SP,
-                Registers.A, Registers.B, Registers.D, Registers.H,
-                Registers.F, Registers.C, Registers.E, Registers.L,
-                Convert.ToByte(Registers.Flags.Z), Convert.ToByte(Registers.Flags.N), Convert.ToByte(Registers.Flags.H), Convert.ToByte(Registers.Flags.C));
-        }
+        _executionResults.Add(new ExecutionResult(pc, instruction, cycles, Registers));
 
         if (_ime)
         {
@@ -127,4 +115,24 @@ public sealed partial class Cpu(Bus bus, InterruptController interrupts, ILogger
 
         return 20;
     }
+
+    private readonly record struct ExecutionResultBuffer(int Capacity) : IEnumerable<ExecutionResult>
+    {
+        private readonly Queue<ExecutionResult> _buffer = new(Capacity);
+
+        public void Add(ExecutionResult result)
+        {
+            if (_buffer.Count >= Capacity)
+            {
+                _buffer.Dequeue();
+            }
+
+            _buffer.Enqueue(result);
+        }
+
+        public IEnumerator<ExecutionResult> GetEnumerator() => ((IEnumerable<ExecutionResult>)_buffer).GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_buffer).GetEnumerator();
+    }
 }
+
+public readonly record struct ExecutionResult(ushort PC, Instruction Instruction, int Cycles, CpuRegisters Registers);

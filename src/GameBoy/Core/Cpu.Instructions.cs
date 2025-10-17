@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace GameBoy.Core;
 
@@ -164,7 +165,7 @@ partial class Cpu
         return 16;
     }
 
-    private byte RET(bool flag)
+    private byte RET(bool flag, [CallerArgumentExpression(nameof(flag))] string flagExpression = "")
     {
         if (!flag)
         {
@@ -173,7 +174,7 @@ partial class Cpu
 
         Registers.PC = POP();
 
-        return 20;
+        return flagExpression is "true" ? (byte)16 : (byte)20;
     }
 
     private byte CALL(ushort address, bool flag)
@@ -1457,9 +1458,8 @@ partial class Cpu
 
     public byte RETI(Instruction instruction)
     {
-        RET(flag: true);
         _ime = true;
-        return 16;
+        return RET(flag: true);
     }
 
     public byte JP_C_a16(Instruction instruction)
