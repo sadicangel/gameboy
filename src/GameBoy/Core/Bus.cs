@@ -142,7 +142,7 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Interru
         }
     }
 
-    [InlineArray(0x8000)]
+    [InlineArray(0x2000)]
     private struct VRam
     {
         private const ushort Offset = 0x8000;

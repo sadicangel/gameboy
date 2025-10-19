@@ -1,4 +1,6 @@
-﻿using Thread = System.Threading.Thread;
+﻿using CancellationToken = System.Threading.CancellationToken;
+using CancellationTokenSource = System.Threading.CancellationTokenSource;
+using Thread = System.Threading.Thread;
 
 namespace GameBoy;
 
@@ -10,8 +12,12 @@ public sealed class Emulator(Cpu cpu, Serial serial, Timer timer, ILogger<Emulat
     private ulong _totalCycles;
     private ulong _ticks;
 
-    private void Run()
+    private void Run(CancellationToken cancellationToken)
     {
+        serial.CharReceived += @char =>
+        {
+            logger.LogInformation("{char}", @char);
+        };
         serial.LineReceived += line =>
         {
             logger.LogInformation("{line}", line);
@@ -37,8 +43,20 @@ public sealed class Emulator(Cpu cpu, Serial serial, Timer timer, ILogger<Emulat
 
         try
         {
+            logger.LogInformation("{@Registers}", new
+            {
+                AF = $"{cpu.Registers.AF:X4}",
+                BC = $"{cpu.Registers.BC:X4}",
+                DE = $"{cpu.Registers.DE:X4}",
+                HL = $"{cpu.Registers.HL:X4}",
+                SP = $"{cpu.Registers.SP:X4}",
+                PC = $"{cpu.Registers.PC:X4}",
+            });
+
             while (_isRunning)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 if (_isPaused)
                 {
                     Thread.Sleep(10);
@@ -89,7 +107,13 @@ public sealed class Emulator(Cpu cpu, Serial serial, Timer timer, ILogger<Emulat
 
         await app.StartAsync();
         var emulator = app.Services.GetRequiredService<Emulator>();
-        emulator.Run();
+        using var cancellationTokenSource = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) =>
+        {
+            e.Cancel = true;
+            cancellationTokenSource.Cancel();
+        };
+        emulator.Run(cancellationTokenSource.Token);
         await app.StopAsync();
     }
 }

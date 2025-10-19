@@ -1,19 +1,21 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Buffers.Binary;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using GameBoy.Core.Mbcs;
 
 namespace GameBoy.Core;
 
 [Singleton]
 public sealed class Cartridge
 {
-    private readonly byte[] _data;
+    private readonly byte[] _rom;
+    private readonly IMbc _mbc;
     private readonly ILogger<Cartridge> _logger;
     private CartridgeHeader _header;
 
     public string FileName { get; }
-    public ReadOnlySpan<byte> Data => _data;
-    public uint Size => (uint)_data.Length;
     public ref CartridgeHeader Header => ref _header;
 
     public Cartridge(IConfiguration configuration, ILogger<Cartridge> logger)
@@ -23,11 +25,10 @@ public sealed class Cartridge
         FileName = configuration.GetRequiredSection("rom").Value
             ?? throw new InvalidOperationException("Game rom not provided");
 
-        _data = File.ReadAllBytes(FileName);
-        _header = MemoryMarshal.Read<CartridgeHeader>(Data[0x100..]);
-        _header.Title[15] = 0;
+        _rom = File.ReadAllBytes(FileName);
+        _header = MemoryMarshal.Read<CartridgeHeader>(_rom.AsSpan(0x100..));
 
-        var checksumSucceeded = Checksum(_data);
+        var checksumSucceeded = Checksum(_rom, _header.HeaderChecksum);
 
         if (_logger.IsEnabled(LogLevel.Information))
         {
@@ -41,7 +42,7 @@ public sealed class Cartridge
                 ROM version...: {RomVersion}
                 Checksum......: {HeaderChecksum} ({HeaderChecksumTest})
             """,
-                Encoding.ASCII.GetString(_header.Title),
+                _header.Title,
                 (byte)_header.CartridgeType, _header.CartridgeType,
                 32 << _header.RomSize,
                 _header.RamSize,
@@ -55,30 +56,128 @@ public sealed class Cartridge
             throw new InvalidOperationException($"Checksum failed for cartridge '{FileName}'");
         }
 
-        static bool Checksum(ReadOnlySpan<byte> data)
+        var (ramBytes, ramBankCount) = DecodeRamSize(_header.RamSize);
+
+        Debug.Assert(ramBankCount != 0 || ramBytes == 0, "RAM bytes without RAM banks not supported");
+
+        _mbc = _header.CartridgeType switch
+        {
+            // No mapper (some carts still have RAM/Battery)
+            CartridgeType.ROM_ONLY
+                => new Mbc0(_rom),
+
+            CartridgeType.ROM_RAM
+                => new Mbc0(_rom),
+
+            CartridgeType.ROM_RAM_BATTERY
+                => new Mbc0(_rom),
+
+            // MBC1 family
+            CartridgeType.MBC1
+                => new Mbc1(_rom, ramBankCount, hasRam: false),
+
+            CartridgeType.MBC1_RAM
+                => new Mbc1(_rom, ramBankCount, hasRam: true),
+
+            CartridgeType.MBC1_RAM_BATTERY
+                => new Mbc1(_rom, ramBankCount, hasRam: true),
+
+            // MBC2 (fixed internal 512×4-bit RAM; ignore header RAM size)
+            CartridgeType.MBC2
+                => new Mbc2(_rom),
+
+            CartridgeType.MBC2_BATTERY
+                => new Mbc2(_rom),
+
+            //// MMM01 family
+            //CartridgeType.MMM01
+            //    => new Mmm01(_rom, ramBankCount),
+
+            //CartridgeType.MMM01_RAM
+            //    => new Mmm01(_rom, ramBankCount),
+
+            //CartridgeType.MMM01_RAM_BATTERY
+            //    => new Mmm01(_rom, ramBankCount),
+
+            // MBC3 family (some with RTC)
+            CartridgeType.MBC3
+                => new Mbc3(_rom, ramBankCount),
+
+            CartridgeType.MBC3_RAM
+                => new Mbc3(_rom, ramBankCount),
+
+            CartridgeType.MBC3_RAM_BATTERY
+                => new Mbc3(_rom, ramBankCount),
+
+            CartridgeType.MBC3_TIMER_BATTERY              // RTC, no external RAM
+                => new Mbc3(_rom, ramBankCount),
+
+            CartridgeType.MBC3_TIMER_RAM_BATTERY          // RTC + RAM + Battery
+                => new Mbc3(_rom, ramBankCount),
+
+            // MBC5 family (some with rumble)
+            CartridgeType.MBC5
+                => new Mbc5(_rom, ramBankCount),
+
+            CartridgeType.MBC5_RAM
+                => new Mbc5(_rom, ramBankCount),
+
+            CartridgeType.MBC5_RAM_BATTERY
+                => new Mbc5(_rom, ramBankCount),
+
+            CartridgeType.MBC5_RUMBLE
+                => new Mbc5(_rom, ramBankCount),
+
+            CartridgeType.MBC5_RUMBLE_RAM
+                => new Mbc5(_rom, ramBankCount),
+
+            CartridgeType.MBC5_RUMBLE_RAM_BATTERY
+                => new Mbc5(_rom, ramBankCount),
+
+            //// Rarer mappers / specials
+            //CartridgeType.MBC6
+            //    => new Mbc6(_rom), // handle its SRAM peculiarities inside
+
+            //CartridgeType.MBC7_SENSOR_RUMBLE_RAM_BATTERY
+            //    => new Mbc7(_rom), // accel + rumble + RAM
+
+            //CartridgeType.POCKET_CAMERA
+            //    => new PocketCamera(_rom),
+
+            //CartridgeType.BANDAI_TAMA5
+            //    => new Tama5(_rom),
+
+            //CartridgeType.HuC3
+            //    => new HuC3(_rom, ramBankCount),
+
+            //CartridgeType.HuC1_RAM_BATTERY
+            //    => new HuC1(_rom, ramBankCount),
+
+            _ => throw new NotSupportedException($"Unsupported cart type: {_header.CartridgeType}"),
+        };
+
+        static bool Checksum(ReadOnlySpan<byte> data, ushort expectedChecksum)
         {
             ushort x = 0;
             for (ushort i = 0x0134; i <= 0x014C; ++i)
                 x = (ushort)(x - data[i] - 1);
-            return (x & 0xFF) != 0;
+            return (x & 0xFF) == expectedChecksum;
         }
+
+        static (int ramBytes, int ramBankCount) DecodeRamSize(byte code) => code switch
+        {
+            0x00 => (0, 0),   // no RAM
+            0x01 => (2 * 1024, 0),   // 2KB (mirror within 8KB window)
+            0x02 => (8 * 1024, 1),   // 8KB  (1 × 8KB bank)
+            0x03 => (32 * 1024, 4),   // 32KB (4 × 8KB)
+            0x04 => (128 * 1024, 16),   // 128KB (16 × 8KB)
+            0x05 => (64 * 1024, 8),   // 64KB (8 × 8KB)
+            _ => (0, 0),
+        };
     }
 
-    public byte Read(ushort address)
-    {
-        var value = _data[address];
-        _logger.LogDebug("'{Address:X4}' -> '{Value:X2}'", address, value);
-        return value;
-    }
-
-
-    public void Write(ushort address, byte value)
-    {
-        _logger.LogDebug("'{Address:X4}' <- '{Value:X2}'", address, value);
-#if DEBUG
-        _data[address] = value;
-#endif
-    }
+    public byte Read(ushort address) => _mbc.Read(address);
+    public void Write(ushort address, byte value) => _mbc.Write(address, value);
 }
 
 [StructLayout(LayoutKind.Explicit)]
@@ -91,7 +190,9 @@ public struct CartridgeHeader
     public NintendoLogo Logo;
 
     [FieldOffset(0x34)]
-    public AsciiTitle Title;
+    private AsciiTitle _title;
+    public readonly string Title =>
+        Encoding.ASCII.GetString(MemoryMarshal.CreateReadOnlySpan(in _title.E0, (CgbFlag is 0x80 or 0xC0) ? 11 : 16).TrimEnd((ReadOnlySpan<byte>)[0, (byte)' ']));
 
     [FieldOffset(0x3F)]
     public ManufacturerCode ManufacturerCode;
@@ -127,7 +228,10 @@ public struct CartridgeHeader
     public byte HeaderChecksum;
 
     [FieldOffset(0x4E)]
-    public ushort GlobalChecksum;
+    private byte _globalChecksum0;
+    [FieldOffset(0x4F)]
+    private byte _globalChecksum1;
+    public readonly ushort GlobalChecksum => BinaryPrimitives.ReadUInt16BigEndian([_globalChecksum0, _globalChecksum1]);
 }
 
 [InlineArray(4)] public struct EntryPoint { public byte E0; }
