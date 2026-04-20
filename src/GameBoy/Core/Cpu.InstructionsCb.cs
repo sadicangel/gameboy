@@ -108,6 +108,7 @@ partial class Cpu
 
         return 8;
     }
+
     private byte RES(ref byte r, int b)
     {
         r &= (byte)~b;
@@ -126,13 +127,17 @@ partial class Cpu
     public byte RLC_E() => RLC(ref Registers.E);
     public byte RLC_H() => RLC(ref Registers.H);
     public byte RLC_L() => RLC(ref Registers.L);
+
     public byte RLC_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         RLC(ref value);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte RLC_A() => RLC(ref Registers.A);
 
     public byte RRC_B() => RRC(ref Registers.B);
@@ -141,13 +146,17 @@ partial class Cpu
     public byte RRC_E() => RRC(ref Registers.E);
     public byte RRC_H() => RRC(ref Registers.H);
     public byte RRC_L() => RRC(ref Registers.L);
+
     public byte RRC_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         RRC(ref value);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte RRC_A() => RRC(ref Registers.A);
 
     public byte RL_B() => RL(ref Registers.B);
@@ -156,13 +165,17 @@ partial class Cpu
     public byte RL_E() => RL(ref Registers.E);
     public byte RL_H() => RL(ref Registers.H);
     public byte RL_L() => RL(ref Registers.L);
+
     public byte RL_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         RL(ref value);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte RL_A() => RL(ref Registers.A);
 
     public byte RR_B() => RR(ref Registers.B);
@@ -171,13 +184,17 @@ partial class Cpu
     public byte RR_E() => RR(ref Registers.E);
     public byte RR_H() => RR(ref Registers.H);
     public byte RR_L() => RR(ref Registers.L);
+
     public byte RR_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         RR(ref value);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte RR_A() => RR(ref Registers.A);
 
     public byte SLA_B() => SLA(ref Registers.B);
@@ -186,13 +203,17 @@ partial class Cpu
     public byte SLA_E() => SLA(ref Registers.E);
     public byte SLA_H() => SLA(ref Registers.H);
     public byte SLA_L() => SLA(ref Registers.L);
+
     public byte SLA_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         SLA(ref value);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte SLA_A() => SLA(ref Registers.A);
 
     public byte SRA_B() => SRA(ref Registers.B);
@@ -201,13 +222,17 @@ partial class Cpu
     public byte SRA_E() => SRA(ref Registers.E);
     public byte SRA_H() => SRA(ref Registers.H);
     public byte SRA_L() => SRA(ref Registers.L);
+
     public byte SRA_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         SRA(ref value);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte SRA_A() => SRA(ref Registers.A);
 
     public byte SWAP_B() => SWAP(ref Registers.B);
@@ -216,13 +241,17 @@ partial class Cpu
     public byte SWAP_E() => SWAP(ref Registers.E);
     public byte SWAP_H() => SWAP(ref Registers.H);
     public byte SWAP_L() => SWAP(ref Registers.L);
+
     public byte SWAP_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         SWAP(ref value);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte SWAP_A() => SWAP(ref Registers.A);
 
     public byte SRL_B() => SRL(ref Registers.B);
@@ -231,13 +260,17 @@ partial class Cpu
     public byte SRL_E() => SRL(ref Registers.E);
     public byte SRL_H() => SRL(ref Registers.H);
     public byte SRL_L() => SRL(ref Registers.L);
+
     public byte SRL_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         SRL(ref value);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte SRL_A() => SRL(ref Registers.A);
 
     public byte BIT_0_B() => BIT(Registers.B, 1 << 0);
@@ -246,7 +279,14 @@ partial class Cpu
     public byte BIT_0_E() => BIT(Registers.E, 1 << 0);
     public byte BIT_0_H() => BIT(Registers.H, 1 << 0);
     public byte BIT_0_L() => BIT(Registers.L, 1 << 0);
-    public byte BIT_0_ptr_HL() => (byte)(BIT(bus.Read(Registers.HL), 1 << 0) + 4);
+
+    public byte BIT_0_ptr_HL()
+    {
+        BIT(bus.Read(Registers.HL), 1 << 0);
+        AdvanceInstruction(4);
+        return 12;
+    }
+
     public byte BIT_0_A() => BIT(Registers.A, 1 << 0);
 
     public byte BIT_1_B() => BIT(Registers.B, 1 << 1);
@@ -255,7 +295,14 @@ partial class Cpu
     public byte BIT_1_E() => BIT(Registers.E, 1 << 1);
     public byte BIT_1_H() => BIT(Registers.H, 1 << 1);
     public byte BIT_1_L() => BIT(Registers.L, 1 << 1);
-    public byte BIT_1_ptr_HL() => (byte)(BIT(bus.Read(Registers.HL), 1 << 1) + 4);
+
+    public byte BIT_1_ptr_HL()
+    {
+        BIT(bus.Read(Registers.HL), 1 << 1);
+        AdvanceInstruction(4);
+        return 12;
+    }
+
     public byte BIT_1_A() => BIT(Registers.A, 1 << 1);
 
     public byte BIT_2_B() => BIT(Registers.B, 1 << 2);
@@ -264,7 +311,14 @@ partial class Cpu
     public byte BIT_2_E() => BIT(Registers.E, 1 << 2);
     public byte BIT_2_H() => BIT(Registers.H, 1 << 2);
     public byte BIT_2_L() => BIT(Registers.L, 1 << 2);
-    public byte BIT_2_ptr_HL() => (byte)(BIT(bus.Read(Registers.HL), 1 << 2) + 4);
+
+    public byte BIT_2_ptr_HL()
+    {
+        BIT(bus.Read(Registers.HL), 1 << 2);
+        AdvanceInstruction(4);
+        return 12;
+    }
+
     public byte BIT_2_A() => BIT(Registers.A, 1 << 2);
 
     public byte BIT_3_B() => BIT(Registers.B, 1 << 3);
@@ -273,7 +327,14 @@ partial class Cpu
     public byte BIT_3_E() => BIT(Registers.E, 1 << 3);
     public byte BIT_3_H() => BIT(Registers.H, 1 << 3);
     public byte BIT_3_L() => BIT(Registers.L, 1 << 3);
-    public byte BIT_3_ptr_HL() => (byte)(BIT(bus.Read(Registers.HL), 1 << 3) + 4);
+
+    public byte BIT_3_ptr_HL()
+    {
+        BIT(bus.Read(Registers.HL), 1 << 3);
+        AdvanceInstruction(4);
+        return 12;
+    }
+
     public byte BIT_3_A() => BIT(Registers.A, 1 << 3);
 
     public byte BIT_4_B() => BIT(Registers.B, 1 << 4);
@@ -282,7 +343,14 @@ partial class Cpu
     public byte BIT_4_E() => BIT(Registers.E, 1 << 4);
     public byte BIT_4_H() => BIT(Registers.H, 1 << 4);
     public byte BIT_4_L() => BIT(Registers.L, 1 << 4);
-    public byte BIT_4_ptr_HL() => (byte)(BIT(bus.Read(Registers.HL), 1 << 4) + 4);
+
+    public byte BIT_4_ptr_HL()
+    {
+        BIT(bus.Read(Registers.HL), 1 << 4);
+        AdvanceInstruction(4);
+        return 12;
+    }
+
     public byte BIT_4_A() => BIT(Registers.A, 1 << 4);
 
     public byte BIT_5_B() => BIT(Registers.B, 1 << 5);
@@ -291,7 +359,14 @@ partial class Cpu
     public byte BIT_5_E() => BIT(Registers.E, 1 << 5);
     public byte BIT_5_H() => BIT(Registers.H, 1 << 5);
     public byte BIT_5_L() => BIT(Registers.L, 1 << 5);
-    public byte BIT_5_ptr_HL() => (byte)(BIT(bus.Read(Registers.HL), 1 << 5) + 4);
+
+    public byte BIT_5_ptr_HL()
+    {
+        BIT(bus.Read(Registers.HL), 1 << 5);
+        AdvanceInstruction(4);
+        return 12;
+    }
+
     public byte BIT_5_A() => BIT(Registers.A, 1 << 5);
 
     public byte BIT_6_B() => BIT(Registers.B, 1 << 6);
@@ -300,7 +375,14 @@ partial class Cpu
     public byte BIT_6_E() => BIT(Registers.E, 1 << 6);
     public byte BIT_6_H() => BIT(Registers.H, 1 << 6);
     public byte BIT_6_L() => BIT(Registers.L, 1 << 6);
-    public byte BIT_6_ptr_HL() => (byte)(BIT(bus.Read(Registers.HL), 1 << 6) + 4);
+
+    public byte BIT_6_ptr_HL()
+    {
+        BIT(bus.Read(Registers.HL), 1 << 6);
+        AdvanceInstruction(4);
+        return 12;
+    }
+
     public byte BIT_6_A() => BIT(Registers.A, 1 << 6);
 
     public byte BIT_7_B() => BIT(Registers.B, 1 << 7);
@@ -309,7 +391,14 @@ partial class Cpu
     public byte BIT_7_E() => BIT(Registers.E, 1 << 7);
     public byte BIT_7_H() => BIT(Registers.H, 1 << 7);
     public byte BIT_7_L() => BIT(Registers.L, 1 << 7);
-    public byte BIT_7_ptr_HL() => (byte)(BIT(bus.Read(Registers.HL), 1 << 7) + 4);
+
+    public byte BIT_7_ptr_HL()
+    {
+        BIT(bus.Read(Registers.HL), 1 << 7);
+        AdvanceInstruction(4);
+        return 12;
+    }
+
     public byte BIT_7_A() => BIT(Registers.A, 1 << 7);
 
     public byte RES_0_B() => RES(ref Registers.B, 1 << 0);
@@ -318,13 +407,17 @@ partial class Cpu
     public byte RES_0_E() => RES(ref Registers.E, 1 << 0);
     public byte RES_0_H() => RES(ref Registers.H, 1 << 0);
     public byte RES_0_L() => RES(ref Registers.L, 1 << 0);
+
     public byte RES_0_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         RES(ref value, 1 << 0);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte RES_0_A() => RES(ref Registers.A, 1 << 0);
 
     public byte RES_1_B() => RES(ref Registers.B, 1 << 1);
@@ -333,13 +426,17 @@ partial class Cpu
     public byte RES_1_E() => RES(ref Registers.E, 1 << 1);
     public byte RES_1_H() => RES(ref Registers.H, 1 << 1);
     public byte RES_1_L() => RES(ref Registers.L, 1 << 1);
+
     public byte RES_1_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         RES(ref value, 1 << 1);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte RES_1_A() => RES(ref Registers.A, 1 << 1);
 
     public byte RES_2_B() => RES(ref Registers.B, 1 << 2);
@@ -348,13 +445,17 @@ partial class Cpu
     public byte RES_2_E() => RES(ref Registers.E, 1 << 2);
     public byte RES_2_H() => RES(ref Registers.H, 1 << 2);
     public byte RES_2_L() => RES(ref Registers.L, 1 << 2);
+
     public byte RES_2_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         RES(ref value, 1 << 2);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte RES_2_A() => RES(ref Registers.A, 1 << 2);
 
     public byte RES_3_B() => RES(ref Registers.B, 1 << 3);
@@ -363,13 +464,17 @@ partial class Cpu
     public byte RES_3_E() => RES(ref Registers.E, 1 << 3);
     public byte RES_3_H() => RES(ref Registers.H, 1 << 3);
     public byte RES_3_L() => RES(ref Registers.L, 1 << 3);
+
     public byte RES_3_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         RES(ref value, 1 << 3);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte RES_3_A() => RES(ref Registers.A, 1 << 3);
 
     public byte RES_4_B() => RES(ref Registers.B, 1 << 4);
@@ -378,13 +483,17 @@ partial class Cpu
     public byte RES_4_E() => RES(ref Registers.E, 1 << 4);
     public byte RES_4_H() => RES(ref Registers.H, 1 << 4);
     public byte RES_4_L() => RES(ref Registers.L, 1 << 4);
+
     public byte RES_4_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         RES(ref value, 1 << 4);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte RES_4_A() => RES(ref Registers.A, 1 << 4);
 
     public byte RES_5_B() => RES(ref Registers.B, 1 << 5);
@@ -393,13 +502,17 @@ partial class Cpu
     public byte RES_5_E() => RES(ref Registers.E, 1 << 5);
     public byte RES_5_H() => RES(ref Registers.H, 1 << 5);
     public byte RES_5_L() => RES(ref Registers.L, 1 << 5);
+
     public byte RES_5_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         RES(ref value, 1 << 5);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte RES_5_A() => RES(ref Registers.A, 1 << 5);
 
     public byte RES_6_B() => RES(ref Registers.B, 1 << 6);
@@ -408,13 +521,17 @@ partial class Cpu
     public byte RES_6_E() => RES(ref Registers.E, 1 << 6);
     public byte RES_6_H() => RES(ref Registers.H, 1 << 6);
     public byte RES_6_L() => RES(ref Registers.L, 1 << 6);
+
     public byte RES_6_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         RES(ref value, 1 << 6);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte RES_6_A() => RES(ref Registers.A, 1 << 6);
 
     public byte RES_7_B() => RES(ref Registers.B, 1 << 7);
@@ -423,13 +540,17 @@ partial class Cpu
     public byte RES_7_E() => RES(ref Registers.E, 1 << 7);
     public byte RES_7_H() => RES(ref Registers.H, 1 << 7);
     public byte RES_7_L() => RES(ref Registers.L, 1 << 7);
+
     public byte RES_7_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         RES(ref value, 1 << 7);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte RES_7_A() => RES(ref Registers.A, 1 << 7);
 
     public byte SET_0_B() => SET(ref Registers.B, 1 << 0);
@@ -438,13 +559,17 @@ partial class Cpu
     public byte SET_0_E() => SET(ref Registers.E, 1 << 0);
     public byte SET_0_H() => SET(ref Registers.H, 1 << 0);
     public byte SET_0_L() => SET(ref Registers.L, 1 << 0);
+
     public byte SET_0_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         SET(ref value, 1 << 0);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte SET_0_A() => SET(ref Registers.A, 1 << 0);
 
     public byte SET_1_B() => SET(ref Registers.B, 1 << 1);
@@ -453,13 +578,17 @@ partial class Cpu
     public byte SET_1_E() => SET(ref Registers.E, 1 << 1);
     public byte SET_1_H() => SET(ref Registers.H, 1 << 1);
     public byte SET_1_L() => SET(ref Registers.L, 1 << 1);
+
     public byte SET_1_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         SET(ref value, 1 << 1);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte SET_1_A() => SET(ref Registers.A, 1 << 1);
 
     public byte SET_2_B() => SET(ref Registers.B, 1 << 2);
@@ -468,13 +597,17 @@ partial class Cpu
     public byte SET_2_E() => SET(ref Registers.E, 1 << 2);
     public byte SET_2_H() => SET(ref Registers.H, 1 << 2);
     public byte SET_2_L() => SET(ref Registers.L, 1 << 2);
+
     public byte SET_2_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         SET(ref value, 1 << 2);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte SET_2_A() => SET(ref Registers.A, 1 << 2);
 
     public byte SET_3_B() => SET(ref Registers.B, 1 << 3);
@@ -483,13 +616,17 @@ partial class Cpu
     public byte SET_3_E() => SET(ref Registers.E, 1 << 3);
     public byte SET_3_H() => SET(ref Registers.H, 1 << 3);
     public byte SET_3_L() => SET(ref Registers.L, 1 << 3);
+
     public byte SET_3_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         SET(ref value, 1 << 3);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte SET_3_A() => SET(ref Registers.A, 1 << 3);
 
     public byte SET_4_B() => SET(ref Registers.B, 1 << 4);
@@ -498,13 +635,17 @@ partial class Cpu
     public byte SET_4_E() => SET(ref Registers.E, 1 << 4);
     public byte SET_4_H() => SET(ref Registers.H, 1 << 4);
     public byte SET_4_L() => SET(ref Registers.L, 1 << 4);
+
     public byte SET_4_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         SET(ref value, 1 << 4);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte SET_4_A() => SET(ref Registers.A, 1 << 4);
 
     public byte SET_5_B() => SET(ref Registers.B, 1 << 5);
@@ -513,13 +654,17 @@ partial class Cpu
     public byte SET_5_E() => SET(ref Registers.E, 1 << 5);
     public byte SET_5_H() => SET(ref Registers.H, 1 << 5);
     public byte SET_5_L() => SET(ref Registers.L, 1 << 5);
+
     public byte SET_5_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         SET(ref value, 1 << 5);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte SET_5_A() => SET(ref Registers.A, 1 << 5);
 
     public byte SET_6_B() => SET(ref Registers.B, 1 << 6);
@@ -528,13 +673,17 @@ partial class Cpu
     public byte SET_6_E() => SET(ref Registers.E, 1 << 6);
     public byte SET_6_H() => SET(ref Registers.H, 1 << 6);
     public byte SET_6_L() => SET(ref Registers.L, 1 << 6);
+
     public byte SET_6_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         SET(ref value, 1 << 6);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte SET_6_A() => SET(ref Registers.A, 1 << 6);
 
     public byte SET_7_B() => SET(ref Registers.B, 1 << 7);
@@ -543,12 +692,16 @@ partial class Cpu
     public byte SET_7_E() => SET(ref Registers.E, 1 << 7);
     public byte SET_7_H() => SET(ref Registers.H, 1 << 7);
     public byte SET_7_L() => SET(ref Registers.L, 1 << 7);
+
     public byte SET_7_ptr_HL()
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         SET(ref value, 1 << 7);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 16;
     }
+
     public byte SET_7_A() => SET(ref Registers.A, 1 << 7);
 }

@@ -3,9 +3,10 @@
 namespace GameBoy.Core;
 
 [Singleton]
-public sealed class Serial(InterruptController interrupts)
+public sealed class Serial(InterruptController interrupts, IEnumerable<IEmulatorRunObserver> observers)
 {
     private readonly StringBuilder _lineBuilder = new();
+    private readonly IEmulatorRunObserver[] _observers = observers.ToArray();
 
     public event Action<char>? CharReceived;
     public event Action<string>? LineReceived;
@@ -28,6 +29,11 @@ public sealed class Serial(InterruptController interrupts)
                     var line = _lineBuilder.ToString().TrimEnd('\n', '\r', '\0');
                     if (!string.IsNullOrWhiteSpace(line))
                     {
+                        foreach (var observer in _observers)
+                        {
+                            observer.OnSerialLineReceived(line);
+                        }
+
                         LineReceived?.Invoke(line);
                     }
                     _lineBuilder.Clear();

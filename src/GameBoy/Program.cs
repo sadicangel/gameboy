@@ -1,3 +1,8 @@
-﻿//await Emulator.RunAsync(@"D:\Development\gb-test-roms\cpu_instrs\cpu_instrs.gb");
-//await Emulator.RunAsync(@"D:\Development\gb-test-roms\instr_timing\instr_timing.gb");
-await Emulator.RunAsync(@"D:\Development\gb-test-roms\interrupt_time\interrupt_time.gb");
+if (args is not [var romPath])
+{
+    Console.Error.WriteLine("Usage: GameBoy <rom-path>");
+    Environment.ExitCode = 1;
+    return;
+}
+
+await Emulator.RunAsync(romPath, System.Threading.CancellationToken.None);

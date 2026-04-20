@@ -1,49 +1,20 @@
-﻿using CancellationToken = System.Threading.CancellationToken;
+using CancellationToken = System.Threading.CancellationToken;
 using CancellationTokenSource = System.Threading.CancellationTokenSource;
 using Thread = System.Threading.Thread;
 
 namespace GameBoy;
 
 [Singleton]
-public sealed class Emulator(Cpu cpu, Serial serial, Timer timer, ILogger<Emulator> logger)
+public sealed class Emulator(Cpu cpu, Bus bus, ILogger<Emulator> logger, IEnumerable<IEmulatorRunObserver> observers)
 {
-    private bool _isRunning = true;
     private bool _isPaused = false;
-    private ulong _totalCycles;
-    private ulong _ticks;
+    private readonly IEmulatorRunObserver[] _observers = observers.ToArray();
 
-    private void Run(CancellationToken cancellationToken)
+    public void Run(CancellationToken cancellationToken)
     {
-        serial.CharReceived += @char =>
-        {
-            logger.LogInformation("{char}", @char);
-        };
-        serial.LineReceived += line =>
-        {
-            logger.LogInformation("{line}", line);
-            if (line.StartsWith("Passed") || line.StartsWith("Failed"))
-            {
-                _isRunning = false;
-            }
-            if (line.StartsWith("Failed"))
-            {
-                logger.LogWarning("Last Results:{NewLine}{Results}", Environment.NewLine, string.Join(Environment.NewLine, cpu.ExecutionResults.Select(x => new
-                {
-                    Instruction = $"{x.PC:X4}: {x.Instruction} ({x.Cycles:D2} cycles)",
-                    AF = $"{x.Registers.AF:X4}",
-                    BC = $"{x.Registers.BC:X4}",
-                    DE = $"{x.Registers.DE:X4}",
-                    HL = $"{x.Registers.HL:X4}",
-                    SP = $"{x.Registers.SP:X4}",
-                    PC = $"{x.Registers.PC:X4}",
-                })));
-            }
-
-        };
-
-        try
-        {
-            logger.LogInformation("{@Registers}", new
+        logger.LogInformation(
+            "{@Registers}",
+            new
             {
                 AF = $"{cpu.Registers.AF:X4}",
                 BC = $"{cpu.Registers.BC:X4}",
@@ -53,67 +24,79 @@ public sealed class Emulator(Cpu cpu, Serial serial, Timer timer, ILogger<Emulat
                 PC = $"{cpu.Registers.PC:X4}",
             });
 
-            while (_isRunning)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                if (_isPaused)
-                {
-                    Thread.Sleep(10);
-                    continue;
-                }
-
-                var cycles = cpu.Step();
-
-                timer.Tick(cycles);
-
-                _totalCycles += cycles;
-                ++_ticks;
-            }
-        }
-        catch (Exception ex)
+        while (true)
         {
-            logger.LogError(ex, "{message}{NewLine}Last Results:{NewLine}{Results}", ex.Message, Environment.NewLine, Environment.NewLine, string.Join(Environment.NewLine, cpu.ExecutionResults.Select(x => new
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (_isPaused)
             {
-                Instruction = $"{x.PC:X4}: {x.Instruction} ({x.Cycles:D2} cycles)",
-                AF = $"{x.Registers.AF:X4}",
-                BC = $"{x.Registers.BC:X4}",
-                DE = $"{x.Registers.DE:X4}",
-                HL = $"{x.Registers.HL:X4}",
-                SP = $"{x.Registers.SP:X4}",
-                PC = $"{x.Registers.PC:X4}",
-            })));
+                Thread.Sleep(10);
+                continue;
+            }
+
+            cpu.Step();
+
+            foreach (var observer in _observers)
+            {
+                observer.OnStepCompleted(bus);
+            }
         }
     }
 
-    public static async Task RunAsync(string fileName)
+    public static async Task RunAsync(string fileName, CancellationToken cancellationToken)
     {
-        var builder = Host.CreateApplicationBuilder(["--rom", fileName]);
+        using var app = GameBoyHostFactory.Create(
+            fileName,
+            logging => logging.ClearProviders().AddSerilog(
+                new LoggerConfiguration()
+                    .Enrich.FromLogContext()
+                    .WriteTo.Console()
+                    .CreateLogger()));
 
-        builder.Logging.ClearProviders().AddSerilog(
-            new LoggerConfiguration()
-            .Enrich.FromLogContext()
-            .WriteTo.Console()
-            //.WriteTo.File("log.txt", rollingInterval: RollingInterval.Hour)
-            .CreateLogger());
-
-        builder.Services.Scan(scan => scan
-            .FromAssemblyOf<Program>()
-            .AddClasses(classes => classes.WithAttribute<SingletonAttribute>()).AsSelf().WithSingletonLifetime()
-            .AddClasses(classes => classes.WithAttribute<ScopedAttribute>()).AsSelf().WithScopedLifetime()
-            .AddClasses(classes => classes.WithAttribute<TransientAttribute>()).AsSelf().WithTransientLifetime());
-
-        var app = builder.Build();
-
-        await app.StartAsync();
+        await app.StartAsync(cancellationToken);
         var emulator = app.Services.GetRequiredService<Emulator>();
-        using var cancellationTokenSource = new CancellationTokenSource();
-        Console.CancelKeyPress += (_, e) =>
+        var logger = app.Services.GetRequiredService<ILogger<Emulator>>();
+        using var cancellationTokenSource = new ConsoleCancellationTokenSource(cancellationToken);
+        try
         {
-            e.Cancel = true;
-            cancellationTokenSource.Cancel();
-        };
-        emulator.Run(cancellationTokenSource.Token);
-        await app.StopAsync();
+            emulator.Run(cancellationTokenSource.Token);
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.Token.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "{message}", ex.Message);
+        }
+
+        await app.StopAsync(CancellationToken.None);
+    }
+
+    private struct ConsoleCancellationTokenSource : IDisposable
+    {
+        private readonly CancellationTokenSource _cancellationTokenSource;
+        private bool _isDisposed;
+
+        public CancellationToken Token => _cancellationTokenSource.Token;
+
+        public ConsoleCancellationTokenSource(CancellationToken cancellationToken)
+        {
+            _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            Console.CancelKeyPress += Cancel;
+        }
+
+        private void Cancel(object? sender, ConsoleCancelEventArgs args)
+        {
+            args.Cancel = true;
+            _cancellationTokenSource.Cancel();
+        }
+
+        public void Dispose()
+        {
+            if (_isDisposed) return;
+            _isDisposed = true;
+            Console.CancelKeyPress -= Cancel;
+            _cancellationTokenSource.Dispose();
+        }
     }
 }

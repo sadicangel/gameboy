@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 namespace GameBoy.Core;
 
 [Singleton]
-public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, InterruptController interrupts)
+public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu, Apu apu, SpeedController speedController, InterruptController interrupts)
 {
     private VRam _vram = new();
     private WRam _wram = new();
@@ -106,6 +106,19 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Interru
             0xFF05 => timer.TIMA,
             0xFF06 => timer.TMA,
             0xFF07 => timer.TAC,
+            >= 0xFF10 and <= 0xFF26 => apu.Read(address),
+            0xFF40 => ppu.LCDC,
+            0xFF41 => ppu.STAT,
+            0xFF42 => ppu.SCY,
+            0xFF43 => ppu.SCX,
+            0xFF44 => ppu.LY,
+            0xFF45 => ppu.LYC,
+            0xFF47 => ppu.BGP,
+            0xFF48 => ppu.OBP0,
+            0xFF49 => ppu.OBP1,
+            0xFF4A => ppu.WY,
+            0xFF4B => ppu.WX,
+            0xFF4D => speedController.KEY1,
             0xFF0F => interrupts.ReadIF(),
             _ => _hreg.Read(address),
         };
@@ -132,6 +145,45 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Interru
                 break;
             case 0xFF07:
                 timer.TAC = value;
+                break;
+            case >= 0xFF10 and <= 0xFF26:
+                apu.Write(address, value);
+                break;
+            case 0xFF40:
+                ppu.LCDC = value;
+                break;
+            case 0xFF41:
+                ppu.STAT = value;
+                break;
+            case 0xFF42:
+                ppu.SCY = value;
+                break;
+            case 0xFF43:
+                ppu.SCX = value;
+                break;
+            case 0xFF44:
+                ppu.LY = value;
+                break;
+            case 0xFF45:
+                ppu.LYC = value;
+                break;
+            case 0xFF47:
+                ppu.BGP = value;
+                break;
+            case 0xFF48:
+                ppu.OBP0 = value;
+                break;
+            case 0xFF49:
+                ppu.OBP1 = value;
+                break;
+            case 0xFF4A:
+                ppu.WY = value;
+                break;
+            case 0xFF4B:
+                ppu.WX = value;
+                break;
+            case 0xFF4D:
+                speedController.WriteKEY1(value);
                 break;
             case 0xFF0F:
                 interrupts.WriteIF(value);

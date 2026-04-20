@@ -10,4 +10,5 @@
     <File Path="SpellingExclusions.dic" />
   </Folder>
   <Project Path="src/GameBoy/GameBoy.csproj" />
+  <Project Path="tests/GameBoy.Tests/GameBoy.Tests.csproj" />
 </Solution>

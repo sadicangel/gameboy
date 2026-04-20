@@ -307,8 +307,8 @@ partial class Cpu
 
     public byte STOP_d8(Instruction instruction)
     {
-        throw new NotImplementedException($"Instruction '{instruction.Opcode.Description}' not implemented");
-        // return 4;
+        speedController.TryToggleSpeed();
+        return 4;
     }
 
     public byte LD_DE_d16(Instruction instruction)
@@ -542,22 +542,27 @@ partial class Cpu
     public byte INC_ptr_HL(Instruction instruction)
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         INC(ref value);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 12;
     }
 
     public byte DEC_ptr_HL(Instruction instruction)
     {
         var value = bus.Read(Registers.HL);
+        AdvanceInstruction(4);
         DEC(ref value);
         bus.Write(Registers.HL, value);
+        AdvanceInstruction(4);
         return 12;
     }
 
     public byte LD_ptr_HL_d8(Instruction instruction)
     {
         bus.Write(Registers.HL, instruction.N8);
+        AdvanceInstruction(4);
         return 12;
     }
 
@@ -948,6 +953,7 @@ partial class Cpu
         else
         {
             _haltBug = true;
+            _interruptReturnsToHalt = _imeLatch;
         }
 
         return 4;
@@ -1495,6 +1501,7 @@ partial class Cpu
     public byte LDH_ptr_a8_A(Instruction instruction)
     {
         bus.Write((ushort)(0xFF00 + instruction.N8), Registers.A);
+        AdvanceInstruction(4);
         return 12;
     }
 
@@ -1556,6 +1563,7 @@ partial class Cpu
     public byte LD_ptr_a16_A(Instruction instruction)
     {
         bus.Write(instruction.N16, Registers.A);
+        AdvanceInstruction(4);
         return 16;
     }
 
@@ -1587,6 +1595,7 @@ partial class Cpu
     public byte LDH_A_ptr_a8(Instruction instruction)
     {
         Registers.A = bus.Read((ushort)(0xFF00 + instruction.N8));
+        AdvanceInstruction(4);
         return 12;
     }
 
@@ -1605,6 +1614,7 @@ partial class Cpu
     public byte DI(Instruction instruction)
     {
         _ime = false;
+        _imeLatch = false;
         return 4;
     }
 
@@ -1649,6 +1659,7 @@ partial class Cpu
     public byte LD_A_ptr_a16(Instruction instruction)
     {
         Registers.A = bus.Read(instruction.N16);
+        AdvanceInstruction(4);
         return 16;
     }
 
