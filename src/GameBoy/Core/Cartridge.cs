@@ -7,7 +7,7 @@ using GameBoy.Core.Mbcs;
 
 namespace GameBoy.Core;
 
-[Singleton]
+[Service(ServiceLifetime.Scoped)]
 public sealed class Cartridge
 {
     private readonly byte[] _rom;
@@ -18,12 +18,13 @@ public sealed class Cartridge
     public string FileName { get; }
     public ref CartridgeHeader Header => ref _header;
 
-    public Cartridge(IConfiguration configuration, ILogger<Cartridge> logger)
+    public Cartridge(EmulatorSessionState state, ILogger<Cartridge> logger)
     {
         _logger = logger;
 
-        FileName = configuration.GetRequiredSection("rom").Value
-            ?? throw new InvalidOperationException("Game rom not provided");
+        FileName = string.IsNullOrWhiteSpace(state.RomPath)
+            ? throw new InvalidOperationException("Game rom not provided")
+            : state.RomPath;
 
         _rom = File.ReadAllBytes(FileName);
         _header = MemoryMarshal.Read<CartridgeHeader>(_rom.AsSpan(0x100..));
@@ -32,23 +33,27 @@ public sealed class Cartridge
 
         if (_logger.IsEnabled(LogLevel.Information))
         {
-            _logger.LogInformation("""
-            Cartridge loaded:
-                Title.........: {Title}.
-                Type..........: {TypeValue} ({TypeName})
-                ROM size......: {RomSize} kB
-                RAM size......: {RamSize} kB
-                Licensee......: {LicenseeCode} ({LicenseeName})
-                ROM version...: {RomVersion}
-                Checksum......: {HeaderChecksum} ({HeaderChecksumTest})
-            """,
+            _logger.LogInformation(
+                """
+                Cartridge loaded:
+                    Title.........: {Title}.
+                    Type..........: {TypeValue} ({TypeName})
+                    ROM size......: {RomSize} kB
+                    RAM size......: {RamSize} kB
+                    Licensee......: {LicenseeCode} ({LicenseeName})
+                    ROM version...: {RomVersion}
+                    Checksum......: {HeaderChecksum} ({HeaderChecksumTest})
+                """,
                 _header.Title,
-                (byte)_header.CartridgeType, _header.CartridgeType,
+                (byte)_header.CartridgeType,
+                _header.CartridgeType,
                 32 << _header.RomSize,
                 _header.RamSize,
-                (byte)_header.NewLicenseeCode, _header.NewLicenseeCode,
+                (byte)_header.NewLicenseeCode,
+                _header.NewLicenseeCode,
                 _header.RomVersion,
-                _header.HeaderChecksum, (checksumSucceeded ? "PASS" : "FAIL"));
+                _header.HeaderChecksum,
+                checksumSucceeded ? "PASS" : "FAIL");
         }
 
         if (checksumSucceeded is false)
@@ -109,10 +114,10 @@ public sealed class Cartridge
             CartridgeType.MBC3_RAM_BATTERY
                 => new Mbc3(_rom, ramBankCount),
 
-            CartridgeType.MBC3_TIMER_BATTERY              // RTC, no external RAM
+            CartridgeType.MBC3_TIMER_BATTERY // RTC, no external RAM
                 => new Mbc3(_rom, ramBankCount),
 
-            CartridgeType.MBC3_TIMER_RAM_BATTERY          // RTC + RAM + Battery
+            CartridgeType.MBC3_TIMER_RAM_BATTERY // RTC + RAM + Battery
                 => new Mbc3(_rom, ramBankCount),
 
             // MBC5 family (some with rumble)
@@ -166,12 +171,12 @@ public sealed class Cartridge
 
         static (int ramBytes, int ramBankCount) DecodeRamSize(byte code) => code switch
         {
-            0x00 => (0, 0),   // no RAM
-            0x01 => (2 * 1024, 0),   // 2KB (mirror within 8KB window)
-            0x02 => (8 * 1024, 1),   // 8KB  (1 × 8KB bank)
-            0x03 => (32 * 1024, 4),   // 32KB (4 × 8KB)
-            0x04 => (128 * 1024, 16),   // 128KB (16 × 8KB)
-            0x05 => (64 * 1024, 8),   // 64KB (8 × 8KB)
+            0x00 => (0, 0), // no RAM
+            0x01 => (2 * 1024, 0), // 2KB (mirror within 8KB window)
+            0x02 => (8 * 1024, 1), // 8KB  (1 × 8KB bank)
+            0x03 => (32 * 1024, 4), // 32KB (4 × 8KB)
+            0x04 => (128 * 1024, 16), // 128KB (16 × 8KB)
+            0x05 => (64 * 1024, 8), // 64KB (8 × 8KB)
             _ => (0, 0),
         };
     }
@@ -183,62 +188,65 @@ public sealed class Cartridge
 [StructLayout(LayoutKind.Explicit)]
 public struct CartridgeHeader
 {
-    [FieldOffset(0x00)]
-    public EntryPoint EntryPoint;
+    [FieldOffset(0x00)] public EntryPoint EntryPoint;
 
-    [FieldOffset(0x04)]
-    public NintendoLogo Logo;
+    [FieldOffset(0x04)] public NintendoLogo Logo;
 
-    [FieldOffset(0x34)]
-    private AsciiTitle _title;
+    [FieldOffset(0x34)] private AsciiTitle _title;
+
     public readonly string Title =>
-        Encoding.ASCII.GetString(MemoryMarshal.CreateReadOnlySpan(in _title.E0, (CgbFlag is 0x80 or 0xC0) ? 11 : 16).TrimEnd((ReadOnlySpan<byte>)[0, (byte)' ']));
+        Encoding.ASCII.GetString(MemoryMarshal.CreateReadOnlySpan(in _title.E0, CgbFlag is 0x80 or 0xC0 ? 11 : 16).TrimEnd((ReadOnlySpan<byte>)[0, (byte)' ']));
 
-    [FieldOffset(0x3F)]
-    public ManufacturerCode ManufacturerCode;
+    [FieldOffset(0x3F)] public ManufacturerCode ManufacturerCode;
 
-    [FieldOffset(0x43)]
-    public byte CgbFlag;
+    [FieldOffset(0x43)] public byte CgbFlag;
 
-    [FieldOffset(0x44)]
-    public NewLicenseeCode NewLicenseeCode;
+    [FieldOffset(0x44)] public NewLicenseeCode NewLicenseeCode;
 
-    [FieldOffset(0x46)]
-    public byte SgbFlag;
+    [FieldOffset(0x46)] public byte SgbFlag;
 
-    [FieldOffset(0x47)]
-    public CartridgeType CartridgeType;
+    [FieldOffset(0x47)] public CartridgeType CartridgeType;
 
-    [FieldOffset(0x48)]
-    public byte RomSize;
+    [FieldOffset(0x48)] public byte RomSize;
 
-    [FieldOffset(0x49)]
-    public byte RamSize;
+    [FieldOffset(0x49)] public byte RamSize;
 
-    [FieldOffset(0x4A)]
-    public byte DestinationCode;
+    [FieldOffset(0x4A)] public byte DestinationCode;
 
-    [FieldOffset(0x4B)]
-    public byte OldLicenseeCode;
+    [FieldOffset(0x4B)] public byte OldLicenseeCode;
 
-    [FieldOffset(0x4C)]
-    public byte RomVersion;
+    [FieldOffset(0x4C)] public byte RomVersion;
 
-    [FieldOffset(0x4D)]
-    public byte HeaderChecksum;
+    [FieldOffset(0x4D)] public byte HeaderChecksum;
 
-    [FieldOffset(0x4E)]
-    private byte _globalChecksum0;
-    [FieldOffset(0x4F)]
-    private byte _globalChecksum1;
+    [FieldOffset(0x4E)] private byte _globalChecksum0;
+    [FieldOffset(0x4F)] private byte _globalChecksum1;
     public readonly ushort GlobalChecksum => BinaryPrimitives.ReadUInt16BigEndian([_globalChecksum0, _globalChecksum1]);
 }
 
-[InlineArray(4)] public struct EntryPoint { public byte E0; }
-[InlineArray(48)] public struct NintendoLogo { public byte E0; }
-[InlineArray(16)] public struct AsciiTitle { public byte E0; }
-[InlineArray(16)] public struct ManufacturerCode { public byte E0; }
+[InlineArray(4)]
+public struct EntryPoint
+{
+    public byte E0;
+}
 
+[InlineArray(48)]
+public struct NintendoLogo
+{
+    public byte E0;
+}
+
+[InlineArray(16)]
+public struct AsciiTitle
+{
+    public byte E0;
+}
+
+[InlineArray(16)]
+public struct ManufacturerCode
+{
+    public byte E0;
+}
 
 public enum CartridgeType : byte
 {

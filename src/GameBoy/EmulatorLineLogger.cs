@@ -1,11 +1,7 @@
-namespace GameBoy;
+﻿namespace GameBoy;
 
-[Singleton]
-public sealed class EmulatorLineLogger(ILogger<Emulator> logger) : IEmulatorRunObserver
+[Service(ServiceLifetime.Singleton, typeof(IEmulatorSerialObserver))]
+public sealed class EmulatorLineLogger(ILogger<Emulator> logger) : IEmulatorSerialObserver
 {
     public void OnSerialLineReceived(string line) => logger.LogInformation("{line}", line);
-
-    public void OnStepCompleted(Bus bus)
-    {
-    }
 }

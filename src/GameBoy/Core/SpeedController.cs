@@ -1,6 +1,6 @@
-namespace GameBoy.Core;
+﻿namespace GameBoy.Core;
 
-[Singleton]
+[Service(ServiceLifetime.Scoped)]
 public sealed class SpeedController(Cartridge cartridge)
 {
     private bool _speedSwitchArmed;

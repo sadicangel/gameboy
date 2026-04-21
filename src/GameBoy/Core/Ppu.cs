@@ -1,13 +1,19 @@
-namespace GameBoy.Core;
+﻿namespace GameBoy.Core;
 
-[Singleton]
+[Service(ServiceLifetime.Scoped)]
 public sealed class Ppu(InterruptController interrupts)
 {
+    private byte[] _frontBuffer = new byte[VideoFrame.Width * VideoFrame.Height];
+    private byte[] _backBuffer = new byte[VideoFrame.Width * VideoFrame.Height];
     private int _lineCycles;
     private byte _ly;
     private byte _stat;
 
+    public uint CompletedFrames { get; private set; }
+    public VideoFrame LatestFrame => new(CompletedFrames, _frontBuffer);
+
     public byte LCDC { get; set; } = 0x91;
+
     public byte STAT
     {
         get => (byte)((_stat & 0x78) | CurrentMode | (_ly == LYC ? 0x04 : 0x00));
@@ -16,6 +22,7 @@ public sealed class Ppu(InterruptController interrupts)
 
     public byte SCY { get; set; }
     public byte SCX { get; set; }
+
     public byte LY
     {
         get => _ly;
@@ -25,6 +32,7 @@ public sealed class Ppu(InterruptController interrupts)
             _lineCycles = 0;
         }
     }
+
     public byte LYC { get; set; }
     public byte BGP { get; set; } = 0xFC;
     public byte OBP0 { get; set; } = 0xFF;
@@ -58,6 +66,8 @@ public sealed class Ppu(InterruptController interrupts)
 
             if (_ly == 144)
             {
+                CompletedFrames++;
+                (_frontBuffer, _backBuffer) = (_backBuffer, _frontBuffer);
                 interrupts.Request(Interrupts.VBlank);
             }
             else if (_ly > 153)

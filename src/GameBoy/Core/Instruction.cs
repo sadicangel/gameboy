@@ -14,7 +14,7 @@ public struct Instruction(Opcode opcode)
     [field: FieldOffset(1)] public OpcodeCb OpcodeCb { get; set; }
     public readonly byte Exec(Cpu cpu) => Opcode.Exec(cpu, this);
 
-    public override readonly string ToString()
+    public readonly override string ToString()
     {
         if (Opcode is Opcode.PREFIX)
         {

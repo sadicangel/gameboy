@@ -1,6 +1,6 @@
-namespace GameBoy.Core;
+﻿namespace GameBoy.Core;
 
-[Singleton]
+[Service(ServiceLifetime.Scoped)]
 public sealed class Apu
 {
     private const int LengthClockPeriod = 16_384;
@@ -107,6 +107,7 @@ public sealed class Apu
                 {
                     _channel1Enabled = false;
                 }
+
                 break;
             case 0xFF13:
                 _nr13 = value;
@@ -117,6 +118,7 @@ public sealed class Apu
                 {
                     TriggerChannel1();
                 }
+
                 break;
             case 0xFF16:
                 _nr21 = value;
@@ -128,6 +130,7 @@ public sealed class Apu
                 {
                     _channel2Enabled = false;
                 }
+
                 break;
             case 0xFF18:
                 _nr23 = value;
@@ -138,6 +141,7 @@ public sealed class Apu
                 {
                     TriggerChannel2();
                 }
+
                 break;
             case 0xFF1A:
                 _nr30 = value;

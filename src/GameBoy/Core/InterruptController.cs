@@ -1,12 +1,12 @@
 ﻿namespace GameBoy.Core;
 
-[Singleton]
+[Service(ServiceLifetime.Scoped)]
 public sealed class InterruptController
 {
     private Interrupts _if;
     private Interrupts _ie;
 
-    public Interrupts Pending => (_ie & _if & Interrupts.All);
+    public Interrupts Pending => _ie & _if & Interrupts.All;
     public bool HasPending => Pending != Interrupts.None;
 
     public void Request(Interrupts interrupt) => _if |= interrupt;

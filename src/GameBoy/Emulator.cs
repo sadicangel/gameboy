@@ -1,73 +1,94 @@
-using CancellationToken = System.Threading.CancellationToken;
-using CancellationTokenSource = System.Threading.CancellationTokenSource;
-using Thread = System.Threading.Thread;
+﻿using System.Threading;
 
 namespace GameBoy;
 
-[Singleton]
-public sealed class Emulator(Cpu cpu, Bus bus, ILogger<Emulator> logger, IEnumerable<IEmulatorRunObserver> observers)
+[Service(ServiceLifetime.Scoped)]
+public sealed class Emulator(
+    Cpu cpu,
+    Bus bus,
+    Ppu ppu,
+    Joypad joypad,
+    IEmulatorRuntime runtime,
+    ILogger<Emulator> logger,
+    IEnumerable<IEmulatorStepObserver> observers)
 {
     private bool _isPaused = false;
-    private readonly IEmulatorRunObserver[] _observers = observers.ToArray();
+    private readonly IEmulatorStepObserver[] _observers = observers.ToArray();
+    public Bus Bus => bus;
 
-    public void Run(CancellationToken cancellationToken)
+    public FrameRunResult RunFrame(CancellationToken cancellationToken)
     {
-        logger.LogInformation(
-            "{@Registers}",
-            new
-            {
-                AF = $"{cpu.Registers.AF:X4}",
-                BC = $"{cpu.Registers.BC:X4}",
-                DE = $"{cpu.Registers.DE:X4}",
-                HL = $"{cpu.Registers.HL:X4}",
-                SP = $"{cpu.Registers.SP:X4}",
-                PC = $"{cpu.Registers.PC:X4}",
-            });
+        cancellationToken.ThrowIfCancellationRequested();
 
-        while (true)
+        var targetFrame = ppu.CompletedFrames + 1;
+        joypad.Update(runtime.PollJoypad());
+
+        var cpuCyclesExecuted = 0;
+
+        while (ppu.CompletedFrames < targetFrame)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (_isPaused)
-            {
-                Thread.Sleep(10);
-                continue;
-            }
-
-            cpu.Step();
+            cpuCyclesExecuted += cpu.Step();
 
             foreach (var observer in _observers)
             {
                 observer.OnStepCompleted(bus);
             }
         }
+
+        var frame = ppu.LatestFrame;
+        runtime.PresentFrame(frame);
+        return new FrameRunResult(frame.FrameNumber, cpuCyclesExecuted);
     }
 
-    public static async Task RunAsync(string fileName, CancellationToken cancellationToken)
+    public void Run(CancellationToken cancellationToken)
     {
-        using var app = GameBoyHostFactory.Create(
-            fileName,
-            logging => logging.ClearProviders().AddSerilog(
-                new LoggerConfiguration()
-                    .Enrich.FromLogContext()
-                    .WriteTo.Console()
-                    .CreateLogger()));
-
-        await app.StartAsync(cancellationToken);
-        var emulator = app.Services.GetRequiredService<Emulator>();
-        var logger = app.Services.GetRequiredService<ILogger<Emulator>>();
-        using var cancellationTokenSource = new ConsoleCancellationTokenSource(cancellationToken);
         try
         {
-            emulator.Run(cancellationTokenSource.Token);
-        }
-        catch (OperationCanceledException) when (cancellationTokenSource.Token.IsCancellationRequested)
-        {
+            logger.LogInformation(
+                "Registers: {@Registers}",
+                new
+                {
+                    AF = $"{cpu.Registers.AF:X4}",
+                    BC = $"{cpu.Registers.BC:X4}",
+                    DE = $"{cpu.Registers.DE:X4}",
+                    HL = $"{cpu.Registers.HL:X4}",
+                    SP = $"{cpu.Registers.SP:X4}",
+                    PC = $"{cpu.Registers.PC:X4}",
+                });
+
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                if (_isPaused)
+                {
+                    Thread.Sleep(10);
+                    continue;
+                }
+
+                RunFrame(cancellationToken);
+            }
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "{message}", ex.Message);
         }
+    }
+
+    public static async Task RunAsync(string fileName, CancellationToken cancellationToken)
+    {
+        var builder = GameBoyHost.CreateBuilder();
+        builder.Logging.ClearProviders().AddSerilog(
+            new LoggerConfiguration()
+                .Enrich.FromLogContext()
+                .WriteTo.Console()
+                .CreateLogger());
+
+        using var app = builder.Build();
+        await app.StartAsync(cancellationToken);
+        await using var session = app.Services.GetRequiredService<EmulatorSessionFactory>().LoadRom(fileName);
+        using var cancellationTokenSource = new ConsoleCancellationTokenSource(cancellationToken);
+        session.Emulator.Run(cancellationTokenSource.Token);
 
         await app.StopAsync(CancellationToken.None);
     }

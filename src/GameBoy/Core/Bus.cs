@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace GameBoy.Core;
 
-[Singleton]
+[Service(ServiceLifetime.Scoped)]
 public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu, Apu apu, SpeedController speedController, InterruptController interrupts)
 {
     private VRam _vram = new();

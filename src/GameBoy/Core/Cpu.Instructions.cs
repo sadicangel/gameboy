@@ -300,7 +300,7 @@ partial class Cpu
     public byte RRCA(Instruction instruction)
     {
         Registers.F = 0;
-        Registers.Flags.C = ((Registers.A & 0x1) != 0);
+        Registers.Flags.C = (Registers.A & 0x1) != 0;
         Registers.A = (byte)(Registers.A >> 1 | Registers.A << 7);
         return 4;
     }
@@ -349,7 +349,7 @@ partial class Cpu
     {
         var prevFlagC = Registers.Flags.C;
         Registers.F = 0;
-        Registers.Flags.C = ((Registers.A & 0x80) != 0);
+        Registers.Flags.C = (Registers.A & 0x80) != 0;
         Registers.A = (byte)((Registers.A << 1) | (prevFlagC ? 1 : 0));
         return 4;
     }
@@ -396,7 +396,7 @@ partial class Cpu
     {
         var prevFlagC = Registers.Flags.C;
         Registers.F = 0;
-        Registers.Flags.C = ((Registers.A & 0x1) != 0);
+        Registers.Flags.C = (Registers.A & 0x1) != 0;
         Registers.A = (byte)((Registers.A >> 1) | (prevFlagC ? 0x80 : 0));
         return 4;
     }
@@ -448,6 +448,7 @@ partial class Cpu
             {
                 Registers.A -= 0x60;
             }
+
             if (Registers.Flags.H)
             {
                 Registers.A -= 0x6;
@@ -455,16 +456,18 @@ partial class Cpu
         }
         else
         {
-            if (Registers.Flags.C || (Registers.A > 0x99))
+            if (Registers.Flags.C || Registers.A > 0x99)
             {
                 Registers.A += 0x60;
                 Registers.Flags.C = true;
             }
+
             if (Registers.Flags.H || (Registers.A & 0xF) > 0x9)
             {
                 Registers.A += 0x6;
             }
         }
+
         Registers.Flags.SetZ(Registers.A);
         Registers.Flags.H = false;
         return 4;

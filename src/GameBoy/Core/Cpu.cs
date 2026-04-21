@@ -4,7 +4,7 @@ using System.Numerics;
 
 namespace GameBoy.Core;
 
-[Singleton]
+[Service(ServiceLifetime.Scoped)]
 public sealed partial class Cpu(Bus bus, InterruptController interrupts, Timer timer, Ppu ppu, Apu apu, SpeedController speedController, Cartridge cartridge)
 {
     public CpuRegisters Registers = cartridge.Header.CgbFlag == 0xC0

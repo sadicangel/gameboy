@@ -2,16 +2,17 @@
 
 namespace GameBoy.Core;
 
-[Singleton]
-public sealed class Serial(InterruptController interrupts, IEnumerable<IEmulatorRunObserver> observers)
+[Service(ServiceLifetime.Scoped)]
+public sealed class Serial(InterruptController interrupts, IEnumerable<IEmulatorSerialObserver> observers)
 {
     private readonly StringBuilder _lineBuilder = new();
-    private readonly IEmulatorRunObserver[] _observers = observers.ToArray();
+    private readonly IEmulatorSerialObserver[] _observers = observers.ToArray();
 
-    public event Action<char>? CharReceived;
-    public event Action<string>? LineReceived;
+    // public event Action<char>? CharReceived;
+    // public event Action<string>? LineReceived;
 
     public byte SB { get; set; }
+
     public byte SC
     {
         get => field;
@@ -23,7 +24,7 @@ public sealed class Serial(InterruptController interrupts, IEnumerable<IEmulator
                 interrupts.Request(Interrupts.Serial);
                 var @char = (char)SB;
                 _lineBuilder.Append(@char);
-                CharReceived?.Invoke(@char);
+                //CharReceived?.Invoke(@char);
                 if (@char is '\n' or '\r' or '\0')
                 {
                     var line = _lineBuilder.ToString().TrimEnd('\n', '\r', '\0');
@@ -34,8 +35,9 @@ public sealed class Serial(InterruptController interrupts, IEnumerable<IEmulator
                             observer.OnSerialLineReceived(line);
                         }
 
-                        LineReceived?.Invoke(line);
+                        //LineReceived?.Invoke(line);
                     }
+
                     _lineBuilder.Clear();
                 }
             }

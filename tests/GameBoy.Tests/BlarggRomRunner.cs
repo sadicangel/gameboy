@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace GameBoy.Tests;
 
@@ -33,25 +33,25 @@ internal static class BlarggRomRunner
         using var runCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         runCancellationTokenSource.CancelAfter(timeout);
         var observer = new BlarggRomObserver(stopwatch, runCancellationTokenSource);
-        using var host = GameBoyHostFactory.Create(
-            romPath,
-            logging => logging.ClearProviders(),
-            services => services.AddSingleton<IEmulatorRunObserver>(observer));
+        var builder = GameBoyHost.CreateBuilder();
+        builder.Logging.ClearProviders();
+        builder.Services.AddSingleton<IEmulatorSerialObserver>(observer);
+        builder.Services.AddSingleton<IEmulatorStepObserver>(observer);
+        using var host = builder.Build();
 
         try
         {
             await host.StartAsync(cancellationToken);
+            using var session = host.Services.GetRequiredService<EmulatorSessionFactory>().LoadRom(romPath);
             stopwatch.Start();
-            var emulator = host.Services.GetRequiredService<Emulator>();
-            var bus = host.Services.GetRequiredService<Bus>();
+            var emulator = session.Emulator;
+            var bus = emulator.Bus;
 
             try
             {
                 emulator.Run(runCancellationTokenSource.Token);
             }
-            catch (OperationCanceledException) when (runCancellationTokenSource.IsCancellationRequested)
-            {
-            }
+            catch (OperationCanceledException) when (runCancellationTokenSource.IsCancellationRequested) { }
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -104,16 +104,17 @@ internal static class BlarggRomRunner
         }
 
         output = new string(
-            Enumerable.Range(0, ShellOutputLength)
-                .Select(offset => (char)bus.Read((ushort)(0xA004 + offset)))
-                .TakeWhile(@char => @char != '\0')
-                .ToArray())
+                Enumerable.Range(0, ShellOutputLength)
+                    .Select(offset => (char)bus.Read((ushort)(0xA004 + offset)))
+                    .TakeWhile(@char => @char != '\0')
+                    .ToArray())
             .TrimEnd();
 
         return true;
     }
 
-    private sealed class BlarggRomObserver(Stopwatch stopwatch, CancellationTokenSource runCancellationTokenSource) : IEmulatorRunObserver
+    private sealed class BlarggRomObserver(Stopwatch stopwatch, CancellationTokenSource runCancellationTokenSource)
+        : IEmulatorSerialObserver, IEmulatorStepObserver
     {
         private readonly List<string> _outputLines = [];
         private BlarggRomResult? _result;
@@ -124,21 +125,23 @@ internal static class BlarggRomRunner
 
             if (line.StartsWith("Passed", StringComparison.Ordinal))
             {
-                TryComplete(new BlarggRomResult(
-                    BlarggRomOutcome.Passed,
-                    BlarggRomCompletionSource.Serial,
-                    BuildSerialOutput(_outputLines),
-                    ExitCode: null,
-                    stopwatch.Elapsed));
+                TryComplete(
+                    new BlarggRomResult(
+                        BlarggRomOutcome.Passed,
+                        BlarggRomCompletionSource.Serial,
+                        BuildSerialOutput(_outputLines),
+                        ExitCode: null,
+                        stopwatch.Elapsed));
             }
             else if (line.StartsWith("Failed", StringComparison.Ordinal))
             {
-                TryComplete(new BlarggRomResult(
-                    BlarggRomOutcome.Failed,
-                    BlarggRomCompletionSource.Serial,
-                    BuildSerialOutput(_outputLines),
-                    ExitCode: null,
-                    stopwatch.Elapsed));
+                TryComplete(
+                    new BlarggRomResult(
+                        BlarggRomOutcome.Failed,
+                        BlarggRomCompletionSource.Serial,
+                        BuildSerialOutput(_outputLines),
+                        ExitCode: null,
+                        stopwatch.Elapsed));
             }
         }
 
@@ -151,12 +154,13 @@ internal static class BlarggRomRunner
 
             if (TryReadShellExit(bus, out var exitCode, out var shellOutput))
             {
-                TryComplete(new BlarggRomResult(
-                    exitCode == 0x00 ? BlarggRomOutcome.Passed : BlarggRomOutcome.Failed,
-                    BlarggRomCompletionSource.Shell,
-                    string.IsNullOrWhiteSpace(shellOutput) ? BuildSerialOutput(_outputLines) : shellOutput,
-                    exitCode,
-                    stopwatch.Elapsed));
+                TryComplete(
+                    new BlarggRomResult(
+                        exitCode == 0x00 ? BlarggRomOutcome.Passed : BlarggRomOutcome.Failed,
+                        BlarggRomCompletionSource.Shell,
+                        string.IsNullOrWhiteSpace(shellOutput) ? BuildSerialOutput(_outputLines) : shellOutput,
+                        exitCode,
+                        stopwatch.Elapsed));
             }
         }
 

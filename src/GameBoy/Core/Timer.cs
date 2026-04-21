@@ -2,7 +2,7 @@
 
 namespace GameBoy.Core;
 
-[Singleton]
+[Service(ServiceLifetime.Scoped)]
 public sealed class Timer(InterruptController interrupts, SpeedController speedController)
 {
     private uint _systemCounter;
