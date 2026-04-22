@@ -4,13 +4,17 @@ using System.Runtime.CompilerServices;
 namespace GameBoy.Core;
 
 [Service(ServiceLifetime.Scoped)]
-public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu, Apu apu, SpeedController speedController, InterruptController interrupts)
+public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu, Apu apu, SpeedController speedController, InterruptController interrupts, Joypad joypad)
 {
+    private const int OamDmaCpuCycles = 160 * 4;
+
     private VRam _vram = new();
     private WRam _wram = new();
     private ORam _oram = new();
     private HReg _hreg = new();
     private HRam _hram = new();
+    private byte _oamDmaRegister;
+    private int _oamDmaCyclesRemaining;
 
     // 0x0000 - 0x3FFF : ROM Bank 0
     // 0x4000 - 0x7FFF : ROM Bank 1 - Switchable
@@ -26,7 +30,33 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu
     // 0xFF00 - 0xFF7F : I/O Registers
     // 0xFF80 - 0xFFFE : Zero Page
 
-    public byte Read(ushort address) => address switch
+    public byte Read(ushort address) => ReadCore(address);
+
+    public ushort ReadWord(ushort address) => BinaryPrimitives.ReadUInt16LittleEndian([Read(address), Read((ushort)(address + 1))]);
+
+    public void Write(ushort address, byte value) => WriteCore(address, value);
+
+    public void WriteWord(ushort address, ushort value)
+    {
+        Span<byte> buffer = stackalloc byte[2];
+        BinaryPrimitives.WriteUInt16LittleEndian(buffer, value);
+        Write(address, buffer[0]);
+        Write((ushort)(address + 1), buffer[1]);
+    }
+
+    public byte ConsumeOamDmaStallCycles()
+    {
+        if (_oamDmaCyclesRemaining <= 0)
+        {
+            return 0;
+        }
+
+        const byte stepCycles = 4;
+        _oamDmaCyclesRemaining -= stepCycles;
+        return stepCycles;
+    }
+
+    private byte ReadCore(ushort address) => address switch
     {
         < 0x8000 => cartridge.Read(address),
         < 0xA000 => _vram.Read(address),
@@ -40,9 +70,7 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu
         _ => interrupts.ReadIE(),
     };
 
-    public ushort ReadWord(ushort address) => BinaryPrimitives.ReadUInt16LittleEndian([Read(address), Read((ushort)(address + 1))]);
-
-    public void Write(ushort address, byte value)
+    private void WriteCore(ushort address, byte value)
     {
         switch (address)
         {
@@ -71,7 +99,6 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu
                 return;
 
             case < 0xFF00:
-                // Reserved
                 return;
 
             case < 0xFF80:
@@ -82,30 +109,24 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu
                 _hram.Write(address, value);
                 return;
 
-            default: // 0xFFFF
+            default:
                 interrupts.WriteIE(value);
                 return;
         }
-    }
-
-    public void WriteWord(ushort address, ushort value)
-    {
-        Span<byte> buffer = stackalloc byte[2];
-        BinaryPrimitives.WriteUInt16LittleEndian(buffer, value);
-        Write(address, buffer[0]);
-        Write((ushort)(address + 1), buffer[1]);
     }
 
     private byte ReadHReg(ushort address)
     {
         return address switch
         {
+            0xFF00 => joypad.P1,
             0xFF01 => serial.SB,
             0xFF02 => serial.SC,
             0xFF04 => timer.DIV,
             0xFF05 => timer.TIMA,
             0xFF06 => timer.TMA,
             0xFF07 => timer.TAC,
+            0xFF0F => interrupts.ReadIF(),
             >= 0xFF10 and <= 0xFF26 => apu.Read(address),
             0xFF40 => ppu.LCDC,
             0xFF41 => ppu.STAT,
@@ -113,13 +134,13 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu
             0xFF43 => ppu.SCX,
             0xFF44 => ppu.LY,
             0xFF45 => ppu.LYC,
+            0xFF46 => _oamDmaRegister,
             0xFF47 => ppu.BGP,
             0xFF48 => ppu.OBP0,
             0xFF49 => ppu.OBP1,
             0xFF4A => ppu.WY,
             0xFF4B => ppu.WX,
             0xFF4D => speedController.KEY1,
-            0xFF0F => interrupts.ReadIF(),
             _ => _hreg.Read(address),
         };
     }
@@ -128,6 +149,9 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu
     {
         switch (address)
         {
+            case 0xFF00:
+                joypad.WriteP1(value);
+                break;
             case 0xFF01:
                 serial.SB = value;
                 break;
@@ -167,6 +191,9 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu
             case 0xFF45:
                 ppu.LYC = value;
                 break;
+            case 0xFF46:
+                StartOamDma(value);
+                break;
             case 0xFF47:
                 ppu.BGP = value;
                 break;
@@ -192,6 +219,21 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu
                 _hreg.Write(address, value);
                 break;
         }
+    }
+
+    private void StartOamDma(byte value)
+    {
+        _oamDmaRegister = value;
+
+        var source = (ushort)(value << 8);
+        for (ushort offset = 0; offset < 0xA0; offset++)
+        {
+            _oram.Write((ushort)(0xFE00 + offset), ReadCore((ushort)(source + offset)));
+        }
+
+        // DMG OAM DMA occupies the CPU for 160 M-cycles; we model that as
+        // an immediate copy plus a short CPU stall so games don't race past it.
+        _oamDmaCyclesRemaining = OamDmaCpuCycles;
     }
 
     [InlineArray(0x2000)]

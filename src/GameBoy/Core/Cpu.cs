@@ -41,6 +41,13 @@ public sealed partial class Cpu(Bus bus, InterruptController interrupts, Timer t
 
     public byte Step()
     {
+        var oamDmaCycles = bus.ConsumeOamDmaStallCycles();
+        if (oamDmaCycles != 0)
+        {
+            TickHardware(oamDmaCycles);
+            return oamDmaCycles;
+        }
+
         var enableImeAfterInstruction = _imeLatch;
 
         if (_halted)
