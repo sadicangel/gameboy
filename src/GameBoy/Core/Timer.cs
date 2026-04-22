@@ -15,6 +15,7 @@ public sealed class Timer(InterruptController interrupts, SpeedController speedC
         get => _divReg;
         set
         {
+            _ = value;
             var wasObserved = ObservedInput(_systemCounter, _tac);
             _systemCounter = 0;
             _divReg = 0;

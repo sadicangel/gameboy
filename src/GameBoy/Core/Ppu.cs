@@ -7,7 +7,6 @@ public sealed class Ppu(InterruptController interrupts)
     private byte[] _backBuffer = new byte[VideoFrame.Width * VideoFrame.Height];
     private int _lineCycles;
     private byte _ly;
-    private byte _stat;
 
     public uint CompletedFrames { get; private set; }
     public VideoFrame LatestFrame => new(CompletedFrames, _frontBuffer);
@@ -16,8 +15,8 @@ public sealed class Ppu(InterruptController interrupts)
 
     public byte STAT
     {
-        get => (byte)((_stat & 0x78) | CurrentMode | (_ly == LYC ? 0x04 : 0x00));
-        set => _stat = (byte)(value & 0x78);
+        get => (byte)((field & 0x78) | CurrentMode | (_ly == LYC ? 0x04 : 0x00));
+        set => field = (byte)(value & 0x78);
     }
 
     public byte SCY { get; set; }
@@ -28,6 +27,7 @@ public sealed class Ppu(InterruptController interrupts)
         get => _ly;
         set
         {
+            _ = value;
             _ly = 0;
             _lineCycles = 0;
         }

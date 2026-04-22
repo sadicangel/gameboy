@@ -46,17 +46,20 @@ public sealed class Emulator(
     {
         try
         {
-            logger.LogInformation(
-                "Registers: {@Registers}",
-                new
-                {
-                    AF = $"{cpu.Registers.AF:X4}",
-                    BC = $"{cpu.Registers.BC:X4}",
-                    DE = $"{cpu.Registers.DE:X4}",
-                    HL = $"{cpu.Registers.HL:X4}",
-                    SP = $"{cpu.Registers.SP:X4}",
-                    PC = $"{cpu.Registers.PC:X4}",
-                });
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Registers: {@Registers}",
+                    new
+                    {
+                        AF = $"{cpu.Registers.AF:X4}",
+                        BC = $"{cpu.Registers.BC:X4}",
+                        DE = $"{cpu.Registers.DE:X4}",
+                        HL = $"{cpu.Registers.HL:X4}",
+                        SP = $"{cpu.Registers.SP:X4}",
+                        PC = $"{cpu.Registers.PC:X4}",
+                    });
+            }
 
             while (!cancellationToken.IsCancellationRequested)
             {

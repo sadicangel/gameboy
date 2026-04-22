@@ -1,4 +1,4 @@
-﻿namespace GameBoy.Core.Mbcs;
+﻿namespace GameBoy.Core.Memory;
 
 public sealed class Mbc1(byte[] rom, int ramBankCount, bool hasRam) : IMbc
 {
@@ -8,15 +8,15 @@ public sealed class Mbc1(byte[] rom, int ramBankCount, bool hasRam) : IMbc
     private int _ramBank = 0;
     private bool _ramEnabled = false;
     private BankingMode _bankingMode = BankingMode.Rom;
-    private int _physicalOffset = 0x1FFF & (hasRam ? 0x07FF : 0x1FFF);
+    private readonly int _physicalOffset = 0x1FFF & (hasRam ? 0x07FF : 0x1FFF);
 
     private enum BankingMode : byte { Rom, Ram }
 
     public byte Read(ushort address) => address switch
     {
         < 0x4000 => _rom[address],
-        < 0x8000 => _rom[(_romBank * 0x4000) + (address & 0x3FFF)],
-        < 0xC000 when _ramEnabled => _ram[(_ramBank * 0x2000) + (address & _physicalOffset)],
+        < 0x8000 => _rom[_romBank * 0x4000 + (address & 0x3FFF)],
+        < 0xC000 when _ramEnabled => _ram[_ramBank * 0x2000 + (address & _physicalOffset)],
         _ => 0xFF,
     };
 
@@ -51,7 +51,7 @@ public sealed class Mbc1(byte[] rom, int ramBankCount, bool hasRam) : IMbc
                 break;
 
             case < 0xC000 when _ramEnabled:
-                _ram[(_ramBank * 0x2000) + (address & _physicalOffset)] = value;
+                _ram[_ramBank * 0x2000 + (address & _physicalOffset)] = value;
                 break;
 
             default:

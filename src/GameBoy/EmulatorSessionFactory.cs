@@ -24,5 +24,9 @@ public sealed class EmulatorSessionFactory(IServiceScopeFactory scopeFactory)
 [Service(ServiceLifetime.Scoped)]
 public sealed class EmulatorSessionState
 {
-    public string RomPath { get; set; } = string.Empty;
+    public string RomPath
+    {
+        get => string.IsNullOrWhiteSpace(field) ? throw new InvalidOperationException("ROM path has not been set.") : field;
+        set;
+    }
 }

@@ -1,4 +1,4 @@
-﻿namespace GameBoy.Core.Mbcs;
+﻿namespace GameBoy.Core.Memory;
 
 public sealed class Mbc0(byte[] rom) : IMbc
 {

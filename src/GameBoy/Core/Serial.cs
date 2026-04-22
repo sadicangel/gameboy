@@ -15,7 +15,7 @@ public sealed class Serial(InterruptController interrupts, IEnumerable<IEmulator
 
     public byte SC
     {
-        get => field;
+        get;
         set
         {
             if ((value & 0x81) == 0x81)

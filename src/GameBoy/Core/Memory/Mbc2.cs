@@ -1,4 +1,4 @@
-﻿namespace GameBoy.Core.Mbcs;
+﻿namespace GameBoy.Core.Memory;
 
 public sealed class Mbc2(byte[] rom) : IMbc
 {
@@ -12,11 +12,10 @@ public sealed class Mbc2(byte[] rom) : IMbc
         return address switch
         {
             < 0x4000 => _rom[address],
-            < 0x8000 => _rom[(_romBank * 0x4000) + (address & 0x3FFF)],
+            < 0x8000 => _rom[_romBank * 0x4000 + (address & 0x3FFF)],
             < 0xA000 when _ramEnabled => _ram[address & 0x1FF],
             _ => 0xFF,
         };
-
     }
 
     public void Write(ushort address, byte value)

@@ -1,4 +1,4 @@
-﻿namespace GameBoy.Core.Mbcs;
+﻿namespace GameBoy.Core.Memory;
 
 public sealed class Mbc5(byte[] rom, int ramBankCount) : IMbc
 {
@@ -13,7 +13,7 @@ public sealed class Mbc5(byte[] rom, int ramBankCount) : IMbc
     {
         < 0x4000 => _rom[address],
         < 0x8000 => _rom[(_romBankHi + _romBankLo) * 0x4000 + (address & 0x3FFF)],
-        < 0xC000 when _ramEnabled => _ram[(_ramBank * 0x2000) + (address & 0x1FFF)],
+        < 0xC000 when _ramEnabled => _ram[_ramBank * 0x2000 + (address & 0x1FFF)],
         _ => 0xFF,
     };
 
@@ -38,7 +38,7 @@ public sealed class Mbc5(byte[] rom, int ramBankCount) : IMbc
                 break;
 
             case < 0xC000 when _ramEnabled:
-                _ram[(_ramBank * 0x2000) + (address & 0x1FFF)] = value;
+                _ram[_ramBank * 0x2000 + (address & 0x1FFF)] = value;
                 break;
         }
     }
