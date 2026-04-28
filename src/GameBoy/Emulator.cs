@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Diagnostics;
+using System.Threading;
 
 namespace GameBoy;
 
@@ -12,6 +13,7 @@ public sealed class Emulator(
     ILogger<Emulator> logger,
     IEnumerable<IEmulatorStepObserver> observers)
 {
+    private static readonly TimeSpan s_spinThreshold = TimeSpan.FromMilliseconds(1);
     private bool _isPaused = false;
     private readonly IEmulatorStepObserver[] _observers = observers.ToArray();
     public Bus Bus => bus;
@@ -44,6 +46,9 @@ public sealed class Emulator(
 
     public void Run(CancellationToken cancellationToken)
     {
+        var lastFrameDurationTimestampDelta = 0L;
+        var nextFrameDeadlineTimestamp = 0L;
+
         try
         {
             if (logger.IsEnabled(LogLevel.Information))
@@ -66,61 +71,72 @@ public sealed class Emulator(
                 if (_isPaused)
                 {
                     Thread.Sleep(10);
+                    lastFrameDurationTimestampDelta = 0L;
+                    nextFrameDeadlineTimestamp = 0L;
                     continue;
                 }
 
                 RunFrame(cancellationToken);
+
+                var frameDurationTimestampDelta = ToStopwatchTicks(runtime.TargetFrameDuration);
+                if (frameDurationTimestampDelta == 0)
+                {
+                    lastFrameDurationTimestampDelta = 0L;
+                    nextFrameDeadlineTimestamp = 0L;
+                    continue;
+                }
+
+                if (frameDurationTimestampDelta != lastFrameDurationTimestampDelta || nextFrameDeadlineTimestamp == 0)
+                {
+                    nextFrameDeadlineTimestamp = Stopwatch.GetTimestamp() + frameDurationTimestampDelta;
+                    lastFrameDurationTimestampDelta = frameDurationTimestampDelta;
+                }
+
+                WaitForNextFrame(frameDurationTimestampDelta, ref nextFrameDeadlineTimestamp, cancellationToken);
             }
         }
-        catch (Exception ex)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            logger.LogError(ex, "{message}", ex.Message);
+            // Normal shutdown
         }
     }
 
-    public static async Task RunAsync(string fileName, CancellationToken cancellationToken)
+    private static long ToStopwatchTicks(TimeSpan duration)
+        => duration <= TimeSpan.Zero
+            ? 0L
+            : Math.Max(1L, duration.Ticks * Stopwatch.Frequency / TimeSpan.TicksPerSecond);
+
+    private static void WaitForNextFrame(
+        long frameDurationTimestampDelta,
+        ref long nextFrameDeadlineTimestamp,
+        CancellationToken cancellationToken)
     {
-        var builder = GameBoyHost.CreateBuilder();
-        builder.Logging.ClearProviders().AddSerilog(
-            new LoggerConfiguration()
-                .Enrich.FromLogContext()
-                .WriteTo.Console()
-                .CreateLogger());
-
-        using var app = builder.Build();
-        await app.StartAsync(cancellationToken);
-        await using var session = app.Services.GetRequiredService<EmulatorSessionFactory>().LoadRom(fileName);
-        using var cancellationTokenSource = new ConsoleCancellationTokenSource(cancellationToken);
-        session.Emulator.Run(cancellationTokenSource.Token);
-
-        await app.StopAsync(CancellationToken.None);
-    }
-
-    private struct ConsoleCancellationTokenSource : IDisposable
-    {
-        private readonly CancellationTokenSource _cancellationTokenSource;
-        private bool _isDisposed;
-
-        public CancellationToken Token => _cancellationTokenSource.Token;
-
-        public ConsoleCancellationTokenSource(CancellationToken cancellationToken)
+        var currentTimestamp = Stopwatch.GetTimestamp();
+        if (currentTimestamp - nextFrameDeadlineTimestamp > frameDurationTimestampDelta + frameDurationTimestampDelta)
         {
-            _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            Console.CancelKeyPress += Cancel;
+            nextFrameDeadlineTimestamp = currentTimestamp + frameDurationTimestampDelta;
+            return;
         }
 
-        private void Cancel(object? sender, ConsoleCancelEventArgs args)
+        while (true)
         {
-            args.Cancel = true;
-            _cancellationTokenSource.Cancel();
-        }
+            cancellationToken.ThrowIfCancellationRequested();
 
-        public void Dispose()
-        {
-            if (_isDisposed) return;
-            _isDisposed = true;
-            Console.CancelKeyPress -= Cancel;
-            _cancellationTokenSource.Dispose();
+            currentTimestamp = Stopwatch.GetTimestamp();
+            if (currentTimestamp >= nextFrameDeadlineTimestamp)
+            {
+                nextFrameDeadlineTimestamp += frameDurationTimestampDelta;
+                return;
+            }
+
+            var remaining = Stopwatch.GetElapsedTime(currentTimestamp, nextFrameDeadlineTimestamp);
+            if (remaining > s_spinThreshold)
+            {
+                Thread.Sleep(remaining - s_spinThreshold);
+                continue;
+            }
+
+            Thread.SpinWait(256);
         }
     }
 }

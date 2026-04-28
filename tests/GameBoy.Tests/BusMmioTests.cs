@@ -74,6 +74,7 @@ public sealed class BusMmioTests
     public void FF46_copies_a_full_oam_page()
     {
         var hardware = CreateHardware();
+        hardware.Bus.Write(0xFF40, 0x00);
 
         for (ushort offset = 0; offset < 0xA0; offset++)
         {
@@ -87,6 +88,44 @@ public sealed class BusMmioTests
         {
             Assert.Equal((byte)(offset ^ 0x5A), hardware.Bus.Read((ushort)(0xFE00 + offset)));
         }
+    }
+
+    [Fact]
+    public void Vram_is_blocked_during_mode_3_and_accessible_in_hblank()
+    {
+        var hardware = CreateHardware();
+        hardware.Bus.Write(0xFF40, 0x00);
+        hardware.Bus.Write(0x8000, 0x12);
+        hardware.Bus.Write(0xFF40, 0x91);
+
+        hardware.Ppu.Tick(80);
+
+        hardware.Bus.Write(0x8000, 0x34);
+        Assert.Equal(0xFF, hardware.Bus.Read(0x8000));
+
+        hardware.Ppu.Tick(172);
+
+        Assert.Equal(0x12, hardware.Bus.Read(0x8000));
+    }
+
+    [Fact]
+    public void Oam_is_blocked_in_mode_2_and_mode_3_but_dma_still_populates_memory()
+    {
+        var hardware = CreateHardware();
+        hardware.Bus.Write(0xFF40, 0x00);
+        hardware.Bus.Write(0xFE00, 0x12);
+        hardware.Bus.Write(0xC000, 0x99);
+        hardware.Bus.Write(0xFF40, 0x91);
+
+        Assert.Equal(0xFF, hardware.Bus.Read(0xFE00));
+        hardware.Bus.Write(0xFE00, 0x34);
+        hardware.Bus.Write(0xFF46, 0xC0);
+
+        hardware.Ppu.Tick(80);
+        Assert.Equal(0xFF, hardware.Bus.Read(0xFE00));
+
+        hardware.Ppu.Tick(172);
+        Assert.Equal(0x99, hardware.Bus.Read(0xFE00));
     }
 
     [Fact]
@@ -137,8 +176,8 @@ public sealed class BusMmioTests
         var bus = new Bus(cartridge, serial, timer, ppu, apu, speedController, interrupts, joypad);
         var cpu = new Cpu(bus, interrupts, timer, ppu, apu, speedController, cartridge);
 
-        return new TestHardware(bus, cpu, joypad, interrupts);
+        return new TestHardware(bus, cpu, ppu, joypad, interrupts);
     }
 
-    private sealed record TestHardware(Bus Bus, Cpu Cpu, Joypad Joypad, InterruptController Interrupts);
+    private sealed record TestHardware(Bus Bus, Cpu Cpu, Ppu Ppu, Joypad Joypad, InterruptController Interrupts);
 }

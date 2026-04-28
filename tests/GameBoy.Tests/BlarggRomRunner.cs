@@ -42,14 +42,16 @@ internal static class BlarggRomRunner
         try
         {
             await host.StartAsync(cancellationToken);
-            using var session = host.Services.GetRequiredService<EmulatorSessionFactory>().LoadRom(romPath);
+            await using var session = host.Services.GetRequiredService<EmulatorSessionFactory>().LoadRom(romPath);
             stopwatch.Start();
-            var emulator = session.Emulator;
-            var bus = emulator.Bus;
+
+            Emulator emulator;
+            Bus bus = null!;
 
             try
             {
-                emulator.Run(runCancellationTokenSource.Token);
+                emulator = session.RunEmulator(runCancellationTokenSource.Token);
+                bus = emulator.Bus;
             }
             catch (OperationCanceledException) when (runCancellationTokenSource.IsCancellationRequested) { }
 

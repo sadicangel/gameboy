@@ -138,6 +138,8 @@ public sealed class FrameRuntimeBoundaryTests
         public void PresentFrame(VideoFrame frame) => _presentedFrames.Add(frame);
 
         public void SubmitAudio(AudioBuffer audio) { }
+
+        public Task RunAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class CancellingObserver(CancellationTokenSource cancellationTokenSource, int stepLimit) : IEmulatorStepObserver

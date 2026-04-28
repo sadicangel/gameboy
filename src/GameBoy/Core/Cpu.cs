@@ -1,12 +1,20 @@
-﻿using System.Collections;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Numerics;
 
 namespace GameBoy.Core;
 
 [Service(ServiceLifetime.Scoped)]
-public sealed partial class Cpu(Bus bus, InterruptController interrupts, Timer timer, Ppu ppu, Apu apu, SpeedController speedController, Cartridge cartridge)
+public sealed partial class Cpu(
+    Bus bus,
+    InterruptController interrupts,
+    Timer timer,
+    Ppu ppu,
+    Apu apu,
+    SpeedController speedController,
+    Cartridge cartridge)
 {
+    private readonly StreamWriter? _writer = null;
+
     public CpuRegisters Registers = cartridge.Header.CgbFlag == 0xC0
         ? new CpuRegisters
         {
@@ -33,11 +41,7 @@ public sealed partial class Cpu(Bus bus, InterruptController interrupts, Timer t
     private bool _haltBug;
     private bool _interruptReturnsToHalt;
 
-    private ulong _instructionCount = 0;
     private byte _instructionCyclesConsumed = 0;
-    private readonly ExecutionResultBuffer _executionResults = new(Capacity: 200);
-
-    public IEnumerable<ExecutionResult> ExecutionResults => _executionResults;
 
     public byte Step()
     {
@@ -82,10 +86,20 @@ public sealed partial class Cpu(Bus bus, InterruptController interrupts, Timer t
         var pc = Registers.PC;
         var instruction = FetchInstruction();
 
-        var cycles = instruction.Exec(this);
+        byte cycles = 0;
+        try
+        {
+            cycles = instruction.Exec(this);
+        }
+        catch (Exception ex)
+        {
+            _writer?.WriteLine($"Failed instruction at PC={pc:X4}: {instruction} (cycles: {cycles}, registers: {Registers}, exception: {ex.Message})");
+            _writer?.Flush();
+            throw;
+        }
+
         TickHardware((byte)(cycles - _instructionCyclesConsumed));
-        _instructionCount++;
-        _executionResults.Add(new ExecutionResult(pc, instruction, cycles, Registers));
+        _writer?.WriteLine($"Executed instruction at PC={pc:X4}: {instruction} (cycles: {cycles}, registers: {Registers})");
 
         if (enableImeAfterInstruction && _imeLatch)
         {
@@ -182,24 +196,4 @@ public sealed partial class Cpu(Bus bus, InterruptController interrupts, Timer t
         TickHardware(cycles);
         _instructionCyclesConsumed += cycles;
     }
-
-    private readonly record struct ExecutionResultBuffer(int Capacity) : IEnumerable<ExecutionResult>
-    {
-        private readonly Queue<ExecutionResult> _buffer = new(Capacity);
-
-        public void Add(ExecutionResult result)
-        {
-            if (_buffer.Count >= Capacity)
-            {
-                _buffer.Dequeue();
-            }
-
-            _buffer.Enqueue(result);
-        }
-
-        public IEnumerator<ExecutionResult> GetEnumerator() => ((IEnumerable<ExecutionResult>)_buffer).GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_buffer).GetEnumerator();
-    }
 }
-
-public readonly record struct ExecutionResult(ushort PC, Instruction Instruction, int Cycles, CpuRegisters Registers);

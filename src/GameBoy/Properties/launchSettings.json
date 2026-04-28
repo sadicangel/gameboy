@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "GameBoy": {
+      "commandName": "Project",
+      "commandLineArgs": "\"D:\\Development\\gameboy\\roms\\Super Mario Land 2 - 6 Golden Coins (USA, Europe) (Rev 2).gb\""
+    }
+  }
+}

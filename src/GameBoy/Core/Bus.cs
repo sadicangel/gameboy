@@ -8,9 +8,7 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu
 {
     private const int OamDmaCpuCycles = 160 * 4;
 
-    private VRam _vram = new();
     private WRam _wram = new();
-    private ORam _oram = new();
     private HReg _hreg = new();
     private HRam _hram = new();
     private byte _oamDmaRegister;
@@ -59,11 +57,11 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu
     private byte ReadCore(ushort address) => address switch
     {
         < 0x8000 => cartridge.Read(address),
-        < 0xA000 => _vram.Read(address),
+        < 0xA000 => ppu.ReadVideoRam(address),
         < 0xC000 => cartridge.Read(address),
         < 0xE000 => _wram.Read(address),
         < 0xFE00 => _wram.Read((ushort)(address - 0x1E00)),
-        < 0xFEA0 => _oram.Read(address),
+        < 0xFEA0 => ppu.ReadObjectAttributeMemory(address),
         < 0xFF00 => 0xFF,
         < 0xFF80 => ReadHReg(address),
         < 0xFFFF => _hram.Read(address),
@@ -79,7 +77,7 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu
                 return;
 
             case < 0xA000:
-                _vram.Write(address, value);
+                ppu.WriteVideoRam(address, value);
                 return;
 
             case < 0xC000:
@@ -95,7 +93,7 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu
                 return;
 
             case < 0xFEA0:
-                _oram.Write(address, value);
+                ppu.WriteObjectAttributeMemory(address, value);
                 return;
 
             case < 0xFF00:
@@ -228,7 +226,7 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu
         var source = (ushort)(value << 8);
         for (ushort offset = 0; offset < 0xA0; offset++)
         {
-            _oram.Write((ushort)(0xFE00 + offset), ReadCore((ushort)(source + offset)));
+            ppu.DmaWriteObjectAttributeMemory((ushort)(0xFE00 + offset), ReadCore((ushort)(source + offset)));
         }
 
         // DMG OAM DMA occupies the CPU for 160 M-cycles; we model that as
@@ -237,29 +235,9 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu
     }
 
     [InlineArray(0x2000)]
-    private struct VRam
-    {
-        private const ushort Offset = 0x8000;
-        public byte E0;
-
-        public readonly byte Read(ushort address) => this[address - Offset];
-        public void Write(ushort address, byte value) => this[address - Offset] = value;
-    }
-
-    [InlineArray(0x2000)]
     private struct WRam
     {
         private const ushort Offset = 0xC000;
-        public byte E0;
-
-        public readonly byte Read(ushort address) => this[address - Offset];
-        public void Write(ushort address, byte value) => this[address - Offset] = value;
-    }
-
-    [InlineArray(0x000A0)]
-    private struct ORam
-    {
-        private const ushort Offset = 0xFE00;
         public byte E0;
 
         public readonly byte Read(ushort address) => this[address - Offset];
