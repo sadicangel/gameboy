@@ -125,7 +125,7 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu
             0xFF06 => timer.TMA,
             0xFF07 => timer.TAC,
             0xFF0F => interrupts.ReadIF(),
-            >= 0xFF10 and <= 0xFF26 => apu.Read(address),
+            >= 0xFF10 and <= 0xFF3F => apu.Read(address),
             0xFF40 => ppu.LCDC,
             0xFF41 => ppu.STAT,
             0xFF42 => ppu.SCY,
@@ -168,7 +168,7 @@ public sealed class Bus(Cartridge cartridge, Serial serial, Timer timer, Ppu ppu
             case 0xFF07:
                 timer.TAC = value;
                 break;
-            case >= 0xFF10 and <= 0xFF26:
+            case >= 0xFF10 and <= 0xFF3F:
                 apu.Write(address, value);
                 break;
             case 0xFF40:

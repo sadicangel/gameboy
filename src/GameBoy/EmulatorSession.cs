@@ -16,6 +16,15 @@ public sealed class EmulatorSession(AsyncServiceScope serviceScope, string romPa
 
     public void Dispose() => serviceScope.Dispose();
 
+    public Emulator Emulator
+    {
+        get
+        {
+            serviceScope.ServiceProvider.GetRequiredService<EmulatorSessionState>().RomPath = romPath;
+            return serviceScope.ServiceProvider.GetRequiredService<Emulator>();
+        }
+    }
+
     public void Start()
     {
         if (_thread is not null)
@@ -34,10 +43,9 @@ public sealed class EmulatorSession(AsyncServiceScope serviceScope, string romPa
 
     internal Emulator RunEmulator(CancellationToken cancellationToken)
     {
-        serviceScope.ServiceProvider.GetRequiredService<EmulatorSessionState>().RomPath = romPath;
         try
         {
-            var emulator = serviceScope.ServiceProvider.GetRequiredService<Emulator>();
+            var emulator = Emulator;
             emulator.Run(cancellationToken);
             return emulator;
         }

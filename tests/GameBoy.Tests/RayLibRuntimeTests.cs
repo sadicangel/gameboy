@@ -25,11 +25,11 @@ public sealed class RayLibRuntimeTests
     }
 
     [Fact]
-    public void GetTargetFrameDuration_halves_when_turbo_is_requested()
+    public void GetTargetFrameDuration_uses_one_third_duration_when_turbo_is_requested()
     {
         var normalDuration = RayLibRuntimeClass.GetTargetFrameDuration(isTurboRequested: false);
         var turboDuration = RayLibRuntimeClass.GetTargetFrameDuration(isTurboRequested: true);
 
-        Assert.Equal(TimeSpan.FromTicks(Math.Max(1L, normalDuration.Ticks / 2)), turboDuration);
+        Assert.Equal(TimeSpan.FromTicks(Math.Max(1L, normalDuration.Ticks / 3)), turboDuration);
     }
 }

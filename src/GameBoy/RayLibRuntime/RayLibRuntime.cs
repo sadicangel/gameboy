@@ -7,15 +7,18 @@ internal sealed class RayLibRuntime : IEmulatorRuntime
 {
     private static readonly TimeSpan s_targetFrameDuration = TimeSpan.FromSeconds(154d * 456d / 4_194_304d);
     private static readonly TimeSpan s_turboFrameDuration = TimeSpan.FromTicks(Math.Max(1L, s_targetFrameDuration.Ticks / 3));
+    private const int MaxQueuedAudioBuffers = 8;
     private readonly Lock _lock = new();
 
     private JoypadState _joypad = default;
     private VideoFrame _frame;
-    private AudioBuffer _audio;
+    private readonly Queue<float[]> _audioQueue = [];
     private bool _isTurboRequested;
 
 
     private Texture _texture;
+    private AudioStream _audioStream;
+    private bool _audioStreamLoaded;
     private readonly byte[] _rgbaBuffer = new byte[VideoFrame.Width * VideoFrame.Height * 4];
 
     public TimeSpan TargetFrameDuration
@@ -50,9 +53,26 @@ internal sealed class RayLibRuntime : IEmulatorRuntime
     /// <inheritdoc />
     public void SubmitAudio(AudioBuffer audio)
     {
+        if (audio.ChannelCount != Apu.AudioChannelCount || audio.SampleRate != Apu.AudioSampleRate || audio.Samples.IsEmpty)
+        {
+            return;
+        }
+
+        var samples = audio.Samples.ToArray();
         lock (_lock)
         {
-            _audio = audio;
+            if (_isTurboRequested)
+            {
+                _audioQueue.Clear();
+                return;
+            }
+
+            while (_audioQueue.Count >= MaxQueuedAudioBuffers)
+            {
+                _audioQueue.Dequeue();
+            }
+
+            _audioQueue.Enqueue(samples);
         }
     }
 
@@ -64,6 +84,7 @@ internal sealed class RayLibRuntime : IEmulatorRuntime
             while (!cancellationToken.IsCancellationRequested && RayLib.WindowShouldClose() == 0)
             {
                 ReadInput();
+                FeedAudio();
                 Draw();
             }
         }
@@ -84,6 +105,7 @@ internal sealed class RayLibRuntime : IEmulatorRuntime
         }
 
         RayLib.SetTargetFPS(60);
+        LoadAudio();
 
         var image = RayLib.GenImageColor(VideoFrame.Width, VideoFrame.Height, Color.Black);
         try
@@ -98,9 +120,15 @@ internal sealed class RayLibRuntime : IEmulatorRuntime
 
     private void Unload()
     {
-        if (RayLib.IsWindowReady() == 0) return;
-        RayLib.CloseWindow();
+        UnloadAudio();
+
+        if (RayLib.IsWindowReady() == 0)
+        {
+            return;
+        }
+
         RayLib.UnloadTexture(_texture);
+        RayLib.CloseWindow();
     }
 
     private void ReadInput()
@@ -160,6 +188,72 @@ internal sealed class RayLibRuntime : IEmulatorRuntime
         RayLib.EndDrawing();
     }
 
+    private void LoadAudio()
+    {
+        RayLib.InitAudioDevice();
+        if (RayLib.IsAudioDeviceReady() == 0)
+        {
+            return;
+        }
+
+        RayLib.SetAudioStreamBufferSizeDefault(1024);
+        _audioStream = RayLib.LoadAudioStream(Apu.AudioSampleRate, sampleSize: 32, Apu.AudioChannelCount);
+        if (RayLib.IsAudioStreamValid(_audioStream) == 0)
+        {
+            return;
+        }
+
+        RayLib.PlayAudioStream(_audioStream);
+        _audioStreamLoaded = true;
+    }
+
+    private void UnloadAudio()
+    {
+        if (RayLib.IsAudioDeviceReady() == 0)
+        {
+            return;
+        }
+
+        if (_audioStreamLoaded)
+        {
+            RayLib.StopAudioStream(_audioStream);
+            RayLib.UnloadAudioStream(_audioStream);
+            _audioStreamLoaded = false;
+        }
+
+        RayLib.CloseAudioDevice();
+    }
+
+    private void FeedAudio()
+    {
+        if (!_audioStreamLoaded || RayLib.IsAudioStreamProcessed(_audioStream) == 0)
+        {
+            return;
+        }
+
+        float[]? samples = null;
+        lock (_lock)
+        {
+            if (_isTurboRequested)
+            {
+                _audioQueue.Clear();
+                return;
+            }
+
+            if (_audioQueue.Count != 0)
+            {
+                samples = _audioQueue.Dequeue();
+            }
+        }
+
+        if (samples is null)
+        {
+            return;
+        }
+
+        UpdateAudioStream(_audioStream, samples, samples.Length / Apu.AudioChannelCount);
+    }
+
     internal static void ConvertFrameToRgba(VideoFrame frame, Span<byte> destination)
     {
         var source = frame.Pixels.Span;
@@ -190,6 +284,14 @@ internal sealed class RayLibRuntime : IEmulatorRuntime
         fixed (byte* p = rgba)
         {
             RayLib.UpdateTexture(texture, p);
+        }
+    }
+
+    private static unsafe void UpdateAudioStream(AudioStream stream, Span<float> samples, int frameCount)
+    {
+        fixed (float* p = samples)
+        {
+            RayLib.UpdateAudioStream(stream, p, frameCount);
         }
     }
 }

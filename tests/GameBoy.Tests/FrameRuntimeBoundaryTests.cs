@@ -21,6 +21,12 @@ public sealed class FrameRuntimeBoundaryTests
             Assert.Equal(result.FrameNumber, frame.FrameNumber);
             Assert.Equal(VideoFrame.Width * VideoFrame.Height, frame.Pixels.Length);
             Assert.True(result.CpuCyclesExecuted > 0);
+
+            var audio = Assert.Single(runtime.SubmittedAudio);
+            Assert.Equal(Apu.AudioChannelCount, audio.ChannelCount);
+            Assert.Equal(Apu.AudioSampleRate, audio.SampleRate);
+            Assert.NotEmpty(audio.Samples.ToArray());
+            Assert.Equal(0, audio.Samples.Length % Apu.AudioChannelCount);
         }
         finally
         {
@@ -47,6 +53,7 @@ public sealed class FrameRuntimeBoundaryTests
             Assert.Equal(2u, second.FrameNumber);
             Assert.Equal(2, runtime.PollCount);
             Assert.Equal([1u, 2u], runtime.PresentedFrames.Select(static frame => frame.FrameNumber).ToArray());
+            Assert.Equal(2, runtime.SubmittedAudio.Count);
         }
         finally
         {
@@ -124,10 +131,12 @@ public sealed class FrameRuntimeBoundaryTests
     private sealed class FakeRuntime : IEmulatorRuntime
     {
         private readonly List<VideoFrame> _presentedFrames = [];
+        private readonly List<AudioBuffer> _submittedAudio = [];
 
         public int PollCount { get; private set; }
         public JoypadState JoypadState { get; set; }
         public IReadOnlyList<VideoFrame> PresentedFrames => _presentedFrames;
+        public IReadOnlyList<AudioBuffer> SubmittedAudio => _submittedAudio;
 
         public JoypadState PollJoypad()
         {
@@ -137,7 +146,7 @@ public sealed class FrameRuntimeBoundaryTests
 
         public void PresentFrame(VideoFrame frame) => _presentedFrames.Add(frame);
 
-        public void SubmitAudio(AudioBuffer audio) { }
+        public void SubmitAudio(AudioBuffer audio) => _submittedAudio.Add(audio);
 
         public Task RunAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }

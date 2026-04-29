@@ -8,6 +8,7 @@ public sealed class Emulator(
     Cpu cpu,
     Bus bus,
     Ppu ppu,
+    Apu apu,
     Joypad joypad,
     IEmulatorRuntime runtime,
     ILogger<Emulator> logger,
@@ -41,6 +42,7 @@ public sealed class Emulator(
 
         var frame = ppu.LatestFrame;
         runtime.PresentFrame(frame);
+        runtime.SubmitAudio(apu.DrainAudioBuffer());
         return new FrameRunResult(frame.FrameNumber, cpuCyclesExecuted);
     }
 

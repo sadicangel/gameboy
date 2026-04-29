@@ -159,6 +159,16 @@ public sealed class BusMmioTests
         Assert.Equal(0xFF, hardware.Bus.Read(address));
     }
 
+    [Fact]
+    public void Wave_ram_is_mapped_to_apu()
+    {
+        var hardware = CreateHardware();
+
+        hardware.Bus.Write(0xFF30, 0xAB);
+
+        Assert.Equal(0xAB, hardware.Bus.Read(0xFF30));
+    }
+
     private static TestHardware CreateHardware()
     {
         var state = new EmulatorSessionState
