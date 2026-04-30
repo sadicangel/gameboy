@@ -1,20 +1,21 @@
-﻿using System.Threading;
+﻿using System.Runtime.InteropServices;
+using System.Threading;
 using RayLibNet.Interop;
 
 namespace GameBoy.RayLibRuntime;
 
-internal sealed class RayLibRuntime : IEmulatorRuntime
+internal sealed class RayLibRuntime(ILogger<RayLibRuntime> logger) : IEmulatorRuntime
 {
     private static readonly TimeSpan s_targetFrameDuration = TimeSpan.FromSeconds(154d * 456d / 4_194_304d);
     private static readonly TimeSpan s_turboFrameDuration = TimeSpan.FromTicks(Math.Max(1L, s_targetFrameDuration.Ticks / 3));
     private const int MaxQueuedAudioBuffers = 8;
+    private static Action<TraceLogLevel, string>? s_traceLogHandler;
     private readonly Lock _lock = new();
 
     private JoypadState _joypad = default;
     private VideoFrame _frame;
     private readonly Queue<float[]> _audioQueue = [];
     private bool _isTurboRequested;
-
 
     private Texture _texture;
     private AudioStream _audioStream;
@@ -100,6 +101,7 @@ internal sealed class RayLibRuntime : IEmulatorRuntime
     {
         unsafe
         {
+            SetupLogging();
             fixed (byte* titlePtr = title)
                 RayLib.InitWindow(160 * 4, 144 * 4, titlePtr);
         }
@@ -115,6 +117,48 @@ internal sealed class RayLibRuntime : IEmulatorRuntime
         finally
         {
             RayLib.UnloadImage(image);
+        }
+    }
+
+    private unsafe void SetupLogging()
+    {
+        s_traceLogHandler += LogTrace;
+        RayLib.SetTraceLogCallback(&TraceLogCallback);
+
+        return;
+
+        void LogTrace(TraceLogLevel logLevel, string message)
+        {
+            switch (logLevel)
+            {
+                case TraceLogLevel.LOG_ALL:
+                case TraceLogLevel.LOG_TRACE:
+                    logger.LogTrace("{message}", message);
+                    break;
+                case TraceLogLevel.LOG_DEBUG:
+                    logger.LogDebug("{message}", message);
+                    break;
+                case TraceLogLevel.LOG_INFO:
+                    logger.LogInformation("{message}", message);
+                    break;
+                case TraceLogLevel.LOG_WARNING:
+                    logger.LogWarning("{message}", message);
+                    break;
+                case TraceLogLevel.LOG_ERROR:
+                    logger.LogError("{message}", message);
+                    break;
+                case TraceLogLevel.LOG_FATAL:
+                    logger.LogCritical("{message}", message);
+                    break;
+            }
+        }
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+        static void TraceLogCallback(int logLevel, byte* format, void* args)
+        {
+            var message = CShim.FormatVaList(format, args);
+            var handler = s_traceLogHandler;
+            handler?.Invoke((TraceLogLevel)logLevel, message);
         }
     }
 
