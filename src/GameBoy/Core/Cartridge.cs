@@ -11,9 +11,9 @@ public sealed class Cartridge
 
     public ref readonly CartridgeHeader Header => ref _header;
 
-    public Cartridge(EmulatorSessionState state, ILogger<Cartridge> logger)
+    public Cartridge(EmulatorSessionOptions options, ILogger<Cartridge> logger)
     {
-        var rom = File.ReadAllBytes(state.RomPath);
+        var rom = File.ReadAllBytes(options.RomPath);
 
         var header = MemoryMarshal.Read<CartridgeHeader>(rom.AsSpan(0x100..));
 
@@ -46,7 +46,7 @@ public sealed class Cartridge
 
         if (!checksumSucceeded)
         {
-            throw new InvalidOperationException($"Checksum failed for cartridge '{state.RomPath}'");
+            throw new InvalidOperationException($"Checksum failed for cartridge '{options.RomPath}'");
         }
 
         var mbc = IMbc.Create(in header, rom);

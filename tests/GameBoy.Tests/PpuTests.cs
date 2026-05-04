@@ -1,3 +1,5 @@
+﻿using GameBoy.Runtime;
+
 namespace GameBoy.Tests;
 
 public sealed class PpuTests

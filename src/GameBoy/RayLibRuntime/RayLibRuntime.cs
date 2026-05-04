@@ -1,37 +1,24 @@
 ﻿using System.Runtime.InteropServices;
 using System.Threading;
+using GameBoy.Runtime;
 using RayLibNet.Interop;
 
 namespace GameBoy.RayLibRuntime;
 
-internal sealed class RayLibRuntime(ILogger<RayLibRuntime> logger) : IEmulatorRuntime
+internal sealed class RayLibRunner(ILogger<RayLibRunner> logger) : IEmulatorRunner, IJoypadInput, IVideoOutput, IAudioOutput
 {
-    private static readonly TimeSpan s_targetFrameDuration = TimeSpan.FromSeconds(154d * 456d / 4_194_304d);
-    private static readonly TimeSpan s_turboFrameDuration = TimeSpan.FromTicks(Math.Max(1L, s_targetFrameDuration.Ticks / 3));
     private const int MaxQueuedAudioBuffers = 8;
     private static Action<TraceLogLevel, string>? s_traceLogHandler;
     private readonly Lock _lock = new();
 
-    private JoypadState _joypad = default;
+    private JoypadState _joypad = JoypadState.None;
     private VideoFrame _frame;
     private readonly Queue<float[]> _audioQueue = [];
-    private bool _isTurboRequested;
 
     private Texture _texture;
     private AudioStream _audioStream;
     private bool _audioStreamLoaded;
     private readonly byte[] _rgbaBuffer = new byte[VideoFrame.Width * VideoFrame.Height * 4];
-
-    public TimeSpan TargetFrameDuration
-    {
-        get
-        {
-            lock (_lock)
-            {
-                return GetTargetFrameDuration(_isTurboRequested);
-            }
-        }
-    }
 
     /// <inheritdoc />
     public JoypadState PollJoypad()
@@ -62,12 +49,6 @@ internal sealed class RayLibRuntime(ILogger<RayLibRuntime> logger) : IEmulatorRu
         var samples = audio.Samples.ToArray();
         lock (_lock)
         {
-            if (_isTurboRequested)
-            {
-                _audioQueue.Clear();
-                return;
-            }
-
             while (_audioQueue.Count >= MaxQueuedAudioBuffers)
             {
                 _audioQueue.Dequeue();
@@ -133,22 +114,22 @@ internal sealed class RayLibRuntime(ILogger<RayLibRuntime> logger) : IEmulatorRu
             {
                 case TraceLogLevel.LOG_ALL:
                 case TraceLogLevel.LOG_TRACE:
-                    logger.LogTrace("{message}", message);
+                    logger.LogTrace(message);
                     break;
                 case TraceLogLevel.LOG_DEBUG:
-                    logger.LogDebug("{message}", message);
+                    logger.LogDebug(message);
                     break;
                 case TraceLogLevel.LOG_INFO:
-                    logger.LogInformation("{message}", message);
+                    logger.LogInformation(message);
                     break;
                 case TraceLogLevel.LOG_WARNING:
-                    logger.LogWarning("{message}", message);
+                    logger.LogWarning(message);
                     break;
                 case TraceLogLevel.LOG_ERROR:
-                    logger.LogError("{message}", message);
+                    logger.LogError(message);
                     break;
                 case TraceLogLevel.LOG_FATAL:
-                    logger.LogCritical("{message}", message);
+                    logger.LogCritical(message);
                     break;
             }
         }
@@ -179,16 +160,27 @@ internal sealed class RayLibRuntime(ILogger<RayLibRuntime> logger) : IEmulatorRu
     {
         lock (_lock)
         {
-            _isTurboRequested = RayLib.IsKeyDown((int)KeyboardKey.KEY_SPACE) != 0;
-            _joypad = new JoypadState(
-                A: RayLib.IsKeyDown((int)KeyboardKey.KEY_Z) != 0,
-                B: RayLib.IsKeyDown((int)KeyboardKey.KEY_X) != 0,
-                Start: RayLib.IsKeyDown((int)KeyboardKey.KEY_ENTER) != 0,
-                Select: RayLib.IsKeyDown((int)KeyboardKey.KEY_BACKSPACE) != 0,
-                Up: RayLib.IsKeyDown((int)KeyboardKey.KEY_UP) != 0,
-                Down: RayLib.IsKeyDown((int)KeyboardKey.KEY_DOWN) != 0,
-                Left: RayLib.IsKeyDown((int)KeyboardKey.KEY_LEFT) != 0,
-                Right: RayLib.IsKeyDown((int)KeyboardKey.KEY_RIGHT) != 0);
+            var buttons = JoypadButtons.None;
+            if (RayLib.IsKeyDown((int)KeyboardKey.KEY_Z) != 0)
+                buttons |= JoypadButtons.A;
+            if (RayLib.IsKeyDown((int)KeyboardKey.KEY_X) != 0)
+                buttons |= JoypadButtons.B;
+            if (RayLib.IsKeyDown((int)KeyboardKey.KEY_ENTER) != 0)
+                buttons |= JoypadButtons.Start;
+            if (RayLib.IsKeyDown((int)KeyboardKey.KEY_BACKSPACE) != 0)
+                buttons |= JoypadButtons.Select;
+            if (RayLib.IsKeyDown((int)KeyboardKey.KEY_UP) != 0)
+                buttons |= JoypadButtons.Up;
+            if (RayLib.IsKeyDown((int)KeyboardKey.KEY_DOWN) != 0)
+                buttons |= JoypadButtons.Down;
+            if (RayLib.IsKeyDown((int)KeyboardKey.KEY_LEFT) != 0)
+                buttons |= JoypadButtons.Left;
+            if (RayLib.IsKeyDown((int)KeyboardKey.KEY_RIGHT) != 0)
+                buttons |= JoypadButtons.Right;
+            if (RayLib.IsKeyDown((int)KeyboardKey.KEY_SPACE) != 0)
+                buttons |= JoypadButtons.Turbo;
+
+            _joypad = new JoypadState(buttons);
         }
     }
 
@@ -278,12 +270,6 @@ internal sealed class RayLibRuntime(ILogger<RayLibRuntime> logger) : IEmulatorRu
         float[]? samples = null;
         lock (_lock)
         {
-            if (_isTurboRequested)
-            {
-                _audioQueue.Clear();
-                return;
-            }
-
             if (_audioQueue.Count != 0)
             {
                 samples = _audioQueue.Dequeue();
@@ -319,9 +305,6 @@ internal sealed class RayLibRuntime(ILogger<RayLibRuntime> logger) : IEmulatorRu
             destination[dst + 3] = 255;
         }
     }
-
-    internal static TimeSpan GetTargetFrameDuration(bool isTurboRequested)
-        => isTurboRequested ? s_turboFrameDuration : s_targetFrameDuration;
 
     private static unsafe void UpdateTexture(Texture texture, Span<byte> rgba)
     {

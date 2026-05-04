@@ -8,15 +8,16 @@ public sealed class BusMmioTests
     public void FF00_reads_selected_button_group()
     {
         var hardware = CreateHardware();
-        hardware.Joypad.Update(new JoypadState(
-            Right: true,
-            Left: false,
-            Up: false,
-            Down: true,
-            A: true,
-            B: false,
-            Select: false,
-            Start: true));
+        hardware.Joypad.Update(
+            new JoypadState(
+                Right: true,
+                Left: false,
+                Up: false,
+                Down: true,
+                A: true,
+                B: false,
+                Select: false,
+                Start: true));
 
         hardware.Bus.Write(0xFF00, 0x20);
         Assert.Equal(0xE6, hardware.Bus.Read(0xFF00));
@@ -35,38 +36,41 @@ public sealed class BusMmioTests
         hardware.Bus.Write(0xFF00, 0x20);
 
         hardware.Interrupts.WriteIF(0);
-        hardware.Joypad.Update(new JoypadState(
-            Right: false,
-            Left: false,
-            Up: false,
-            Down: false,
-            A: true,
-            B: false,
-            Select: false,
-            Start: false));
+        hardware.Joypad.Update(
+            new JoypadState(
+                Right: false,
+                Left: false,
+                Up: false,
+                Down: false,
+                A: true,
+                B: false,
+                Select: false,
+                Start: false));
         Assert.Equal(0, hardware.Interrupts.ReadIF() & (byte)Interrupts.Joypad);
 
-        hardware.Joypad.Update(new JoypadState(
-            Right: true,
-            Left: false,
-            Up: false,
-            Down: false,
-            A: true,
-            B: false,
-            Select: false,
-            Start: false));
+        hardware.Joypad.Update(
+            new JoypadState(
+                Right: true,
+                Left: false,
+                Up: false,
+                Down: false,
+                A: true,
+                B: false,
+                Select: false,
+                Start: false));
         Assert.NotEqual(0, hardware.Interrupts.ReadIF() & (byte)Interrupts.Joypad);
 
         hardware.Interrupts.WriteIF(0);
-        hardware.Joypad.Update(new JoypadState(
-            Right: true,
-            Left: false,
-            Up: false,
-            Down: false,
-            A: true,
-            B: false,
-            Select: false,
-            Start: false));
+        hardware.Joypad.Update(
+            new JoypadState(
+                Right: true,
+                Left: false,
+                Up: false,
+                Down: false,
+                A: true,
+                B: false,
+                Select: false,
+                Start: false));
         Assert.Equal(0, hardware.Interrupts.ReadIF() & (byte)Interrupts.Joypad);
     }
 
@@ -171,15 +175,12 @@ public sealed class BusMmioTests
 
     private static TestHardware CreateHardware()
     {
-        var state = new EmulatorSessionState
-        {
-            RomPath = Path.Combine(AppContext.BaseDirectory, "Roms", "halt_bug.gb")
-        };
+        var state = new EmulatorSessionOptions { RomPath = Path.Combine(AppContext.BaseDirectory, "Roms", "halt_bug.gb") };
         var cartridge = new Cartridge(state, NullLogger<Cartridge>.Instance);
         var interrupts = new InterruptController();
         var joypad = new Joypad(interrupts);
         var speedController = new SpeedController(cartridge);
-        var timer = new GameBoy.Core.Timer(interrupts, speedController);
+        var timer = new Core.Timer(interrupts, speedController);
         var ppu = new Ppu(interrupts);
         var apu = new Apu();
         var serial = new Serial(interrupts, Array.Empty<IEmulatorSerialObserver>());

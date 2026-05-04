@@ -1,5 +1,6 @@
 ﻿using System.Threading;
 using GameBoy.RayLibRuntime;
+using GameBoy.Runtime;
 
 if (args is not [var romPath])
 {
@@ -15,15 +16,19 @@ builder.Logging.ClearProviders().AddSerilog(
         .WriteTo.Console()
         .CreateLogger());
 
-builder.Services.AddSingleton<IEmulatorRuntime, RayLibRuntime>();
+builder.Services.AddSingleton<RayLibRunner>();
+builder.Services.AddSingleton<IEmulatorRunner>(provider => provider.GetRequiredService<RayLibRunner>());
+builder.Services.AddSingleton<IJoypadInput>(provider => provider.GetRequiredService<RayLibRunner>());
+builder.Services.AddSingleton<IVideoOutput>(provider => provider.GetRequiredService<RayLibRunner>());
+builder.Services.AddSingleton<IAudioOutput>(provider => provider.GetRequiredService<RayLibRunner>());
 
 using var app = builder.Build();
 using var cancellationTokenSource = new ConsoleCancellationTokenSource(CancellationToken.None);
 await app.StartAsync(cancellationTokenSource.Token);
 
-var runtime = app.Services.GetRequiredService<IEmulatorRuntime>();
-// TODO: This should be the only call here. Starting a session should be done inside the runtime.
-// await runtime.RunAsync(cancellationTokenSource.Token);
+var runtime = app.Services.GetRequiredService<IEmulatorRunner>();
+// TODO: This should be the only call here. Starting a session should be done inside the runner.
+// await runner.RunAsync(cancellationTokenSource.Token);
 
 var sessionFactory = app.Services.GetRequiredService<EmulatorSessionFactory>();
 await using var session = sessionFactory.LoadRom(romPath);

@@ -1,3 +1,5 @@
+using GameBoy.Runtime;
+
 namespace GameBoy.Core;
 
 [Service(ServiceLifetime.Scoped)]

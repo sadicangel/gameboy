@@ -20,7 +20,7 @@ public sealed class EmulatorSession(AsyncServiceScope serviceScope, string romPa
     {
         get
         {
-            serviceScope.ServiceProvider.GetRequiredService<EmulatorSessionState>().RomPath = romPath;
+            serviceScope.ServiceProvider.GetRequiredService<EmulatorSessionOptions>().RomPath = romPath;
             return serviceScope.ServiceProvider.GetRequiredService<Emulator>();
         }
     }

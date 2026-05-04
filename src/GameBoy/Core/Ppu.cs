@@ -1,3 +1,5 @@
+using GameBoy.Runtime;
+
 namespace GameBoy.Core;
 
 [Service(ServiceLifetime.Scoped)]
@@ -181,6 +183,7 @@ public sealed class Ppu
     private bool IsLcdEnabled => (_lcdc & LcdEnableMask) != 0;
     private bool CanAccessVram => !IsLcdEnabled || _mode != PpuMode.Drawing;
     private bool CanAccessOam => !IsLcdEnabled || (_mode != PpuMode.OamScan && _mode != PpuMode.Drawing);
+
     private int ModeDuration => _mode switch
     {
         PpuMode.OamScan => OamScanCycles,

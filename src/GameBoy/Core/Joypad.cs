@@ -1,4 +1,6 @@
-﻿namespace GameBoy.Core;
+﻿using GameBoy.Runtime;
+
+namespace GameBoy.Core;
 
 [Service(ServiceLifetime.Scoped)]
 public sealed class Joypad(InterruptController interrupts)

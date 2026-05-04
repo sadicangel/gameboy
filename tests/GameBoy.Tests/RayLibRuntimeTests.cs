@@ -1,9 +1,8 @@
 using GameBoy.RayLibRuntime;
-using RayLibRuntimeClass = GameBoy.RayLibRuntime.RayLibRuntime;
 
 namespace GameBoy.Tests;
 
-public sealed class RayLibRuntimeTests
+public sealed class RayLibRunnerTests
 {
     [Fact]
     public void ConvertFrameToRgba_preserves_grayscale_pixel_values()
@@ -16,7 +15,7 @@ public sealed class RayLibRuntimeTests
 
         var rgba = new byte[pixels.Length * 4];
 
-        RayLibRuntimeClass.ConvertFrameToRgba(new VideoFrame(1, pixels), rgba);
+        RayLibRunner.ConvertFrameToRgba(new VideoFrame(1, pixels), rgba);
 
         Assert.Equal([0xFF, 0xFF, 0xFF, 0xFF], rgba[..4]);
         Assert.Equal([0xAA, 0xAA, 0xAA, 0xFF], rgba[4..8]);
@@ -27,8 +26,8 @@ public sealed class RayLibRuntimeTests
     [Fact]
     public void GetTargetFrameDuration_uses_one_third_duration_when_turbo_is_requested()
     {
-        var normalDuration = RayLibRuntimeClass.GetTargetFrameDuration(isTurboRequested: false);
-        var turboDuration = RayLibRuntimeClass.GetTargetFrameDuration(isTurboRequested: true);
+        var normalDuration = RayLibRunner.GetTargetFrameDuration(isTurboRequested: false);
+        var turboDuration = RayLibRunner.GetTargetFrameDuration(isTurboRequested: true);
 
         Assert.Equal(TimeSpan.FromTicks(Math.Max(1L, normalDuration.Ticks / 3)), turboDuration);
     }

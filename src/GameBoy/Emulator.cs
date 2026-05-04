@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Threading;
+using GameBoy.Runtime;
 
 namespace GameBoy;
 
@@ -10,10 +11,18 @@ public sealed class Emulator(
     Ppu ppu,
     Apu apu,
     Joypad joypad,
-    IEmulatorRuntime runtime,
+    IJoypadInput joypadInput,
+    IVideoOutput videoOutput,
+    IAudioOutput audioOutput,
+    EmulatorOptions options,
     ILogger<Emulator> logger,
     IEnumerable<IEmulatorStepObserver> observers)
 {
+    private static readonly long s_targetFrameDurationX1 = Math.Max(1L, TimeSpan.FromSeconds(154d * 456d / 4_194_304d).Ticks * Stopwatch.Frequency / TimeSpan.TicksPerSecond);
+    private static readonly long s_targetFrameDurationX2 = Math.Max(1L, s_targetFrameDurationX1 / 2);
+    private static readonly long s_targetFrameDurationX3 = Math.Max(1L, s_targetFrameDurationX1 / 3);
+    private static readonly long s_targetFrameDurationX4 = Math.Max(1L, s_targetFrameDurationX1 / 4);
+
     private static readonly TimeSpan s_spinThreshold = TimeSpan.FromMilliseconds(1);
     private bool _isPaused = false;
     private readonly IEmulatorStepObserver[] _observers = observers.ToArray();
@@ -24,7 +33,7 @@ public sealed class Emulator(
         cancellationToken.ThrowIfCancellationRequested();
 
         var targetFrame = ppu.CompletedFrames + 1;
-        joypad.Update(runtime.PollJoypad());
+        joypad.Update(joypadInput.PollJoypad());
 
         var cpuCyclesExecuted = 0;
 
@@ -41,8 +50,8 @@ public sealed class Emulator(
         }
 
         var frame = ppu.LatestFrame;
-        runtime.PresentFrame(frame);
-        runtime.SubmitAudio(apu.DrainAudioBuffer());
+        videoOutput.PresentFrame(frame);
+        audioOutput.SubmitAudio(apu.DrainAudioBuffer());
         return new FrameRunResult(frame.FrameNumber, cpuCyclesExecuted);
     }
 
@@ -80,7 +89,7 @@ public sealed class Emulator(
 
                 RunFrame(cancellationToken);
 
-                var frameDurationTimestampDelta = ToStopwatchTicks(runtime.TargetFrameDuration);
+                var frameDurationTimestampDelta = GetFrameDurationTimestampDelta();
                 if (frameDurationTimestampDelta == 0)
                 {
                     lastFrameDurationTimestampDelta = 0L;
@@ -103,10 +112,20 @@ public sealed class Emulator(
         }
     }
 
-    private static long ToStopwatchTicks(TimeSpan duration)
-        => duration <= TimeSpan.Zero
-            ? 0L
-            : Math.Max(1L, duration.Ticks * Stopwatch.Frequency / TimeSpan.TicksPerSecond);
+    private long GetFrameDurationTimestampDelta()
+    {
+        if (!joypad.CurrentState.Turbo) return s_targetFrameDurationX1;
+
+        var multiplier = options.TargetFrameMultiplier;
+        return multiplier switch
+        {
+            1 => s_targetFrameDurationX1,
+            2 => s_targetFrameDurationX2,
+            3 => s_targetFrameDurationX3,
+            4 => s_targetFrameDurationX4,
+            _ => throw new ArgumentOutOfRangeException(nameof(multiplier), "TargetFrameMultiplier must be between 1 and 4.")
+        };
+    }
 
     private static void WaitForNextFrame(
         long frameDurationTimestampDelta,

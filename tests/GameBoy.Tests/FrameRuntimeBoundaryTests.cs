@@ -1,12 +1,14 @@
-﻿namespace GameBoy.Tests;
+﻿using GameBoy.Runtime;
+
+namespace GameBoy.Tests;
 
 public sealed class FrameRuntimeBoundaryTests
 {
     [Fact]
     public async Task RunFrame_polls_joypad_once_and_presents_one_frame()
     {
-        var runtime = new FakeRuntime();
-        using var host = CreateHost(services => services.AddSingleton<IEmulatorRuntime>(runtime));
+        var runtime = new FakeRunner();
+        using var host = CreateHost(services => services.AddSingleton<IEmulatorRunner>(runtime));
 
         await host.StartAsync();
         using var session = CreateSession(host, "halt_bug.gb");
@@ -37,8 +39,8 @@ public sealed class FrameRuntimeBoundaryTests
     [Fact]
     public async Task RunFrame_increments_frame_numbers()
     {
-        var runtime = new FakeRuntime();
-        using var host = CreateHost(services => services.AddSingleton<IEmulatorRuntime>(runtime));
+        var runtime = new FakeRunner();
+        using var host = CreateHost(services => services.AddSingleton<IEmulatorRunner>(runtime));
 
         await host.StartAsync();
         using var session = CreateSession(host, "halt_bug.gb");
@@ -128,7 +130,7 @@ public sealed class FrameRuntimeBoundaryTests
     private static string GetRomPath(string relativePath)
         => Path.Combine(AppContext.BaseDirectory, "Roms", relativePath.Replace('/', Path.DirectorySeparatorChar));
 
-    private sealed class FakeRuntime : IEmulatorRuntime
+    private sealed class FakeRunner : IEmulatorRunner
     {
         private readonly List<VideoFrame> _presentedFrames = [];
         private readonly List<AudioBuffer> _submittedAudio = [];
